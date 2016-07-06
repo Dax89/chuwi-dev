@@ -98,8 +98,8 @@ static void chipone_ts_dowork(struct work_struct* work)
 		    input_mt_report_slot_state(data->input, MT_TOOL_FINGER, true);
 		    input_report_abs(data->input, ABS_MT_TOUCH_MAJOR, 1);
 		    input_report_abs(data->input, ABS_MT_PRESSURE, coordinatearea.pointer[i].pressure);
-		    input_report_abs(data->input, ABS_MT_POSITION_X, X_POSITION(coordinatearea, 0));
-		    input_report_abs(data->input, ABS_MT_POSITION_Y, Y_POSITION(coordinatearea, 0));
+		    input_report_abs(data->input, ABS_MT_POSITION_X, X_POSITION(coordinatearea, i));
+		    input_report_abs(data->input, ABS_MT_POSITION_Y, Y_POSITION(coordinatearea, i));
 
 		    dev_info(dev, "Finger %d, X: %d, Y: %d\n", i, X_POSITION(coordinatearea, i), Y_POSITION(coordinatearea, i));
 		}
