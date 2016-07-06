@@ -81,7 +81,9 @@ static void chipone_ts_dowork(struct work_struct* work)
 	    return;
 	}
 
-	if(coordinatearea.num_pointer > 0)
+	dev_info(dev, "GestureId: %02X\n", coordinatearea.gesture_id);
+
+	if((coordinatearea.gesture_id == 0) && (coordinatearea.num_pointer > 0)) // NOTE: gesture_id == 0 -> touch?
 	{
 	    for(i = 0; i < coordinatearea.num_pointer; i++)
 	    {
@@ -90,15 +92,16 @@ static void chipone_ts_dowork(struct work_struct* work)
 		input_report_abs(data->input, ABS_MT_PRESSURE, coordinatearea.pointer[i].pressure);
 		input_report_abs(data->input, ABS_MT_POSITION_X, X_POSITION(coordinatearea, i));
 		input_report_abs(data->input, ABS_MT_POSITION_Y, Y_POSITION(coordinatearea, i));
-
-		dev_info(dev, "Finger %d, X: %d, Y: %d, Pressure: %d\n", i, X_POSITION(coordinatearea, i), Y_POSITION(coordinatearea, i), coordinatearea.pointer[i].pressure);
 	    }
 	    
 	    input_mt_sync_frame(data->input);
 	    input_sync(data->input);
 	}
-	else
-	    dev_info(dev, "No fingers detected...\n");
+
+	if(coordinatearea.gesture_id & GESTURE_ID_KEY0)
+	{
+	    dev_info(dev, "Windows logo pressed\n");
+	}
 
 	data->last_coordinate_area = coordinatearea; // Save last touch information
 }

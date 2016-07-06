@@ -17,6 +17,11 @@
 #define POINTER_EVENT_STAY 3
 #define POINTER_EVENT_UP   4
 
+#define GESTURE_ID_KEY0 0b00000001 // Windows Logo 
+#define GESTURE_ID_KEY1 0b00000010 
+#define GESTURE_ID_KEY2 0b00000100 
+#define GESTURE_ID_KEY3 0b00001000 
+
 #define MAX_POINTS 10
 
 #define X_POSITION(ca, idx) (((u16)ca.pointer[idx].xh << 8) | ca.pointer[idx].xl)
