@@ -11,6 +11,12 @@
 #define SYSTEM_BUSY_FLAG_IDLE 0
 #define SYSTEM_BUSY_FLAG_BUSY 1
 
+#define POINTER_EVENT_NONE 0
+#define POINTER_EVENT_DOWN 1
+#define POINTER_EVENT_MOVE 2
+#define POINTER_EVENT_STAY 3
+#define POINTER_EVENT_UP   4
+
 #define MAX_POINTS 10
 
 #define X_POSITION(ca, idx) (((u16)ca.pointer[idx].xh << 8) | ca.pointer[idx].xl)
@@ -54,6 +60,7 @@ struct chipone_ts_coordinate_area_regs
 	struct chipone_ts_pointer pointer[MAX_POINTS];
 };
 
+bool chipone_ts_regs_is_finger_down(struct chipone_ts_coordinate_area_regs *coordinatearearegs, int idx);
 int chipone_ts_regs_get_header_area(struct i2c_client* client, struct chipone_ts_header_area_regs* headerarearegs);
 int chipone_ts_regs_get_coordinate_area(struct i2c_client* client, struct chipone_ts_coordinate_area_regs* coordinatearearegs);
 

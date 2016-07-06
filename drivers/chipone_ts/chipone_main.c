@@ -85,26 +85,16 @@ static void chipone_ts_dowork(struct work_struct* work)
 	{
 	    for(i = 0; i < coordinatearea.num_pointer; i++)
 	    {
-		if(!IS_TOUCH_VALID(coordinatearea, i) && IS_TOUCH_VALID(data->last_coordinate_area, i))
-		{
-		    input_mt_slot(data->input, i);
-		    input_mt_report_slot_state(data->input, MT_TOOL_FINGER, false); // No finger here
+		input_mt_slot(data->input, i);
+		input_mt_report_slot_state(data->input, MT_TOOL_FINGER, chipone_ts_regs_is_finger_down(&coordinatearea, i));
+		input_report_abs(data->input, ABS_MT_PRESSURE, coordinatearea.pointer[i].pressure);
+		input_report_abs(data->input, ABS_MT_POSITION_X, X_POSITION(coordinatearea, i));
+		input_report_abs(data->input, ABS_MT_POSITION_Y, Y_POSITION(coordinatearea, i));
 
-		    dev_info(dev, "Finger %d removed", i);
-		}
-		else
-		{
-		    input_mt_slot(data->input, i);
-		    input_mt_report_slot_state(data->input, MT_TOOL_FINGER, true);
-		    input_report_abs(data->input, ABS_MT_TOUCH_MAJOR, 1);
-		    input_report_abs(data->input, ABS_MT_PRESSURE, coordinatearea.pointer[i].pressure);
-		    input_report_abs(data->input, ABS_MT_POSITION_X, X_POSITION(coordinatearea, i));
-		    input_report_abs(data->input, ABS_MT_POSITION_Y, Y_POSITION(coordinatearea, i));
-
-		    dev_info(dev, "Finger %d, X: %d, Y: %d\n", i, X_POSITION(coordinatearea, i), Y_POSITION(coordinatearea, i));
-		}
+		dev_info(dev, "Finger %d, X: %d, Y: %d, Pressure: %d\n", i, X_POSITION(coordinatearea, i), Y_POSITION(coordinatearea, i), coordinatearea.pointer[i].pressure);
 	    }
 	    
+	    input_mt_sync_frame(data->input);
 	    input_sync(data->input);
 	}
 	else

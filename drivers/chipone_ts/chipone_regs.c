@@ -87,6 +87,12 @@ static int chipone_ts_regs_i2c_txdata(struct i2c_client *client, unsigned short 
 }
 */
 
+bool chipone_ts_regs_is_finger_down(struct chipone_ts_coordinate_area_regs *coordinatearearegs, int idx)
+{
+    return (coordinatearearegs->pointer[idx].event_id == POINTER_EVENT_DOWN) || 
+           (coordinatearearegs->pointer[idx].event_id == POINTER_EVENT_MOVE);
+}
+
 int chipone_ts_regs_get_header_area(struct i2c_client* client, struct chipone_ts_header_area_regs* headerarearegs)
 {
     return chipone_ts_regs_i2c_rxdata(client, 0x0000, (char*)headerarearegs, sizeof(*headerarearegs));
