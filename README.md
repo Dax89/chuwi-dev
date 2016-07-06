@@ -8,3 +8,5 @@ Every driver, link, information goes here.
 
 # License
 All files in this repository is released under GNU GPL License
+
+![Chuwi Keyboard](https://dl.dropboxusercontent.com/u/40206233/Chuwi/chuwi_vi10u_desk.png)
