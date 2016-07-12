@@ -314,7 +314,7 @@ int chipone_ts_fw_update(struct i2c_client *client, const char *firmware)
 
     msleep(1);
     chipone_ts_fw_crc_enable(client, 1);
-    dev_info(dev, "Downloading firware '%s'...\n", firmware);
+    dev_info(dev, "Downloading firmware '%s'...\n", firmware);
 
     num = filesize / B_SIZE;
     crcfw = 0;

@@ -10,8 +10,15 @@
 #include "chipone_regs.h"
 
 #define CHIPONE_NAME "chipone_ts"
-#define SCREEN_MAX_X 1366
-#define SCREEN_MAX_Y 768
+#define CHIPONE_IRQ  0x64 // HACK: Hardcode IRQ, kernel doesn't get it at boot time
+
+#ifdef CONFIG_TP_1080
+    #define SCREEN_MAX_X 1920
+    #define SCREEN_MAX_Y 1080
+#else
+    #define SCREEN_MAX_X 1366
+    #define SCREEN_MAX_Y 768
+#endif
 
 struct chipone_ts_data
 {
@@ -81,7 +88,7 @@ static void chipone_ts_dowork(struct work_struct* work)
 	    return;
 	}
 
-	dev_info(dev, "GestureId: %02X\n", coordinatearea.gesture_id);
+	//dev_info(dev, "GestureId: %02X\n", coordinatearea.gesture_id);
 
 	if((coordinatearea.gesture_id == 0) && (coordinatearea.num_pointer > 0)) // NOTE: gesture_id == 0 -> touch?
 	{
@@ -112,11 +119,16 @@ static int chipone_ts_probe(struct i2c_client *client, const struct i2c_device_i
 	struct chipone_ts_data *data;
 	int err;
 
+	/*
+	 * FIXME: Kernel complains at boot, and client->irq is 0
+	 * [    3.816640] i2c_hid i2c-CHPN0001:00: Failed to get GPIO interrupt
+	 *
 	if(!client->irq)
 	{
 		dev_err(dev, "%s, no IRQ specified\n", __func__);
 		return -EINVAL;
 	}
+	*/
 
 	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
 
@@ -142,7 +154,7 @@ static int chipone_ts_probe(struct i2c_client *client, const struct i2c_device_i
 	INIT_WORK(&data->irq_work, chipone_ts_dowork);
 	data->irq_workqueue = create_singlethread_workqueue(dev_name(dev));
 
-	if(request_irq(client->irq, chipone_ts_irq, 0, client->name, data) != 0)
+	if(request_irq(CHIPONE_IRQ, chipone_ts_irq, 0, client->name, data) != 0)
 	{
 		dev_err(dev, "IRQ Handler initialization failed\n");
 		return -EINVAL;
