@@ -130,6 +130,7 @@ static int chipone_ts_probe(struct i2c_client *client, const struct i2c_device_i
 	}
 	*/
 
+	dev_info(dev, "Kernel reports IRQ: 0x%x\n", client->irq);
 	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
 
 	if(!data)
