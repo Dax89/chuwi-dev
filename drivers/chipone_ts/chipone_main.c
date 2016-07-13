@@ -120,7 +120,7 @@ static int chipone_ts_probe(struct i2c_client *client, const struct i2c_device_i
 	int err;
 
 	/*
-	 * FIXME: Kernel complains at boot, and client->irq is 0
+	 * FIXME: Kernel complains at boot, and client->irq == 0
 	 * [    3.816640] i2c_hid i2c-CHPN0001:00: Failed to get GPIO interrupt
 	 *
 	if(!client->irq)
@@ -153,10 +153,11 @@ static int chipone_ts_probe(struct i2c_client *client, const struct i2c_device_i
 
 	INIT_WORK(&data->irq_work, chipone_ts_dowork);
 	data->irq_workqueue = create_singlethread_workqueue(dev_name(dev));
+	err = request_irq(CHIPONE_IRQ, chipone_ts_irq, 0, client->name, data);
 
-	if(request_irq(CHIPONE_IRQ, chipone_ts_irq, 0, client->name, data) != 0)
+	if(err != 0)
 	{
-		dev_err(dev, "IRQ Handler initialization failed\n");
+		dev_err(dev, "IRQ Handler initialization failed for IRQ %x, error: %d\n", CHIPONE_IRQ, err);
 		return -EINVAL;
 	}
 
