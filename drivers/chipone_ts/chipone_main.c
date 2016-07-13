@@ -10,14 +10,15 @@
 #include "chipone_regs.h"
 
 #define CHIPONE_NAME "chipone_ts"
-#define CHIPONE_IRQ  0x64 // HACK: Hardcode IRQ, kernel doesn't get it at boot time
 
-#ifdef CONFIG_TP_1080
+#ifdef CONFIG_HI10
     #define SCREEN_MAX_X 1920
     #define SCREEN_MAX_Y 1080
-#else
+    #define CHIPONE_IRQ  0xB9 // HACK: Hardcode IRQ, kernel doesn't get it at boot time
+#else  //CONFIG_VI10U
     #define SCREEN_MAX_X 1366
     #define SCREEN_MAX_Y 768
+    #define CHIPONE_IRQ  0x64 // HACK: Hardcode IRQ, kernel doesn't get it at boot time
 #endif
 
 struct chipone_ts_data

@@ -12,7 +12,7 @@ default:
 	$(MAKE) -C $(KDIR) M=$(PWD) modules
 
 hi10:
-	KCPPFLAGS="-DCONFIG_TP_1080=1" $(MAKE) default 
+	KCPPFLAGS="-DCONFIG_HI10=1" $(MAKE) default 
 
 install:
 	install -p -m 644 $(TARGET).ko  $(KMODDEST)
