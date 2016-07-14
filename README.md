@@ -12,5 +12,3 @@ Every driver, link, information goes here.
 # License
 Source code in this repository is released under GNU GPL License.<br>
 Firmware dump belongs to their respective owners.
-
-![Chuwi Keyboard](https://dl.dropboxusercontent.com/u/40206233/Chuwi/chuwi_vi10u_desk.png)

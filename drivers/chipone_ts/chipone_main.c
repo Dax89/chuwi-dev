@@ -66,7 +66,7 @@ static void chipone_ts_dowork(struct work_struct* work)
 
 	if(chipone_ts_regs_get_header_area(data->client, &data->last_header_area) < 0)
 	{
-	    dev_err(dev, "Cannot read header");
+	    dev_err(dev, "Cannot read header\n");
 	    return;
 	}
 
