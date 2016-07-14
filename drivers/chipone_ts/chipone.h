@@ -2,7 +2,8 @@
 #define CHIPONE_H
  
 #define CHIPONE_IIC_RETRY_NUM  3
-#define CHIPONE_NAME           "chipone_ts"
+#define CHIPONE_DRIVER_NAME    "chipone_ts"
+#define CHIPONE_NAME           "CHPN0001"
 
 #ifdef CONFIG_HI10
     #define SCREEN_MAX_X 1920

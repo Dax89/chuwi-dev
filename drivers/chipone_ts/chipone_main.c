@@ -13,11 +13,9 @@
 
 static int screen_max_x = SCREEN_MAX_X;
 static int screen_max_y = SCREEN_MAX_Y;
-static unsigned int custom_irq = 0;
 
 module_param(screen_max_x, int, S_IRUGO);
 module_param(screen_max_y, int, S_IRUGO);
-module_param(custom_irq, uint, S_IRUGO);
 
 static int chipone_ts_create_input_device(struct i2c_client *client, struct chipone_ts_data *data)
 {
@@ -113,20 +111,8 @@ static int chipone_ts_probe(struct i2c_client *client, const struct i2c_device_i
     struct chipone_ts_data *data;
     int err;
 
-    /*
-     * FIXME: Kernel complains at boot, and client->irq == 0
-     * [    3.816640] i2c_hid i2c-CHPN0001:00: Failed to get GPIO interrupt
-     *
-     if(!client->irq)
-     {
-	 dev_err(dev, "%s, no IRQ specified\n", __func__);
-	 return -EINVAL;
-     }
-     */
-
     dev_info(dev, "Screen resolution: %dx%d\n", screen_max_x, screen_max_y);
     dev_info(dev, "Kernel reports IRQ: 0x%x\n", client->irq);
-
     data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
 
     if(!data)
@@ -135,12 +121,7 @@ static int chipone_ts_probe(struct i2c_client *client, const struct i2c_device_i
 	return -ENOMEM;
     }
 
-    if(custom_irq != 0)
-    {
-	dev_warn(dev, "Using custom IRQ: 0x%x\n", custom_irq);
-	data->irq = custom_irq;
-    }
-    else if(client->irq != 0)
+    if(client->irq != 0)
     {
 	dev_info(dev, "Detected IRQ: 0x%x\n", client->irq);
 	data->irq = client->irq;
@@ -188,11 +169,19 @@ static int chipone_ts_remove(struct i2c_client *client)
     }
 
     chipone_ts_sysfs_remove(data);
+    flush_workqueue(data->irq_workqueue);
     destroy_workqueue(data->irq_workqueue);
     free_irq(data->irq, data);
 
     return 0;
 }
+
+static const struct i2c_device_id chipone_ts_id[] = {
+    {"CHPN0001:00", 0},
+    { }
+};
+
+MODULE_DEVICE_TABLE(i2c, chipone_ts_id);
 
 static const struct acpi_device_id chipone_ts_acpi_id[] = {
     {"CHPN0001", 0},
@@ -201,21 +190,13 @@ static const struct acpi_device_id chipone_ts_acpi_id[] = {
 
 MODULE_DEVICE_TABLE(acpi, chipone_ts_acpi_id);
 
-static const struct i2c_device_id chipone_ts_id[] = {
-    {CHIPONE_NAME, 0},
-    { }
-};
-
-MODULE_DEVICE_TABLE(i2c, chipone_ts_id);
-
 static struct i2c_driver chipone_ts_driver = {
-    .class    = I2C_CLASS_HWMON,
     .probe    = chipone_ts_probe,
     .remove   = chipone_ts_remove,
     .id_table = chipone_ts_id,
 
     .driver = {
-	.name             = CHIPONE_NAME,
+	.name             = CHIPONE_DRIVER_NAME,
 	.owner            = THIS_MODULE,
 	.acpi_match_table = ACPI_PTR(chipone_ts_acpi_id),
     },
@@ -223,6 +204,8 @@ static struct i2c_driver chipone_ts_driver = {
 
 module_i2c_driver(chipone_ts_driver);
 
+MODULE_SOFTDEP("pre: pinctrl_cherryview");
+MODULE_FIRMWARE("chipone_ts/icnfirmware.bin");
 MODULE_DESCRIPTION("ChipOne touchscreen controller driver");
 MODULE_AUTHOR("Antonio Davide Trogu trogu.davide@gmail.com");
 MODULE_VERSION("1.0");
