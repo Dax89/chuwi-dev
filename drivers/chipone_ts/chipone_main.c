@@ -189,9 +189,7 @@ static int chipone_ts_remove(struct i2c_client *client)
 
     chipone_ts_sysfs_remove(data);
     destroy_workqueue(data->irq_workqueue);
-
-    if(client->irq)
-	free_irq(client->irq, chipone_ts_irq);
+    free_irq(data->irq, data);
 
     return 0;
 }
