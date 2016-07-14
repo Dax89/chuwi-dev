@@ -11,144 +11,170 @@
 #include "chipone_types.h"
 #include "chipone.h"
 
+static int screen_max_x = SCREEN_MAX_X;
+static int screen_max_y = SCREEN_MAX_Y;
+static unsigned int custom_irq = 0;
+
+module_param(screen_max_x, int, S_IRUGO);
+module_param(screen_max_y, int, S_IRUGO);
+module_param(custom_irq, uint, S_IRUGO);
+
 static int chipone_ts_create_input_device(struct i2c_client *client, struct chipone_ts_data *data)
 {
-	struct device *dev = &client->dev;
-	struct input_dev *input;
-	int err;
+    struct device *dev = &client->dev;
+    struct input_dev *input;
+    int err;
 
-	input = devm_input_allocate_device(dev);
-	
-	if(!input)
-		return -ENOMEM;
+    input = devm_input_allocate_device(dev);
 
-	input->name = client->name;
+    if(!input)
+	return -ENOMEM;
 
-        __set_bit(INPUT_PROP_DIRECT, input->propbit);
-        input_mt_init_slots(input, MAX_POINTS, 0);
-	input_set_abs_params(input, ABS_MT_POSITION_X, 0, SCREEN_MAX_X, 0, 0);
-	input_set_abs_params(input, ABS_MT_POSITION_Y, 0, SCREEN_MAX_Y, 0, 0);
+    input->name = client->name;
 
-	// NOTE: Needs Investigation
-	input_set_abs_params(input, ABS_MT_WIDTH_MAJOR, 0, 255, 0, 0);
-	input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255, 0, 0);
-	input_set_abs_params(input, ABS_MT_TRACKING_ID, 0, 255, 0, 0);
+    __set_bit(INPUT_PROP_DIRECT, input->propbit);
+    input_mt_init_slots(input, MAX_POINTS, 0);
+    input_set_abs_params(input, ABS_MT_POSITION_X, 0, screen_max_x, 0, 0);
+    input_set_abs_params(input, ABS_MT_POSITION_Y, 0, screen_max_y, 0, 0);
 
-	err = input_register_device(input);
+    // NOTE: Needs Investigation
+    input_set_abs_params(input, ABS_MT_WIDTH_MAJOR, 0, 255, 0, 0);
+    input_set_abs_params(input, ABS_MT_TOUCH_MAJOR, 0, 255, 0, 0);
+    input_set_abs_params(input, ABS_MT_TRACKING_ID, 0, 255, 0, 0);
 
-	if(err)
-	{
-		dev_err(dev, "Device '%s' registration failed\n", input->name);
-		return -ENODEV;
-	}
+    err = input_register_device(input);
 
-	dev_info(dev, "Device '%s' registration succeeded\n", input->name);
-	data->input = input;
-	return 0;
+    if(err)
+    {
+	dev_err(dev, "Device '%s' registration failed\n", input->name);
+	return -ENODEV;
+    }
+
+    dev_info(dev, "Device '%s' registration succeeded\n", input->name);
+    data->input = input;
+    return 0;
 }
 
 static irqreturn_t chipone_ts_irq(int irq, void* dev_id)
 {
-	struct chipone_ts_data *data = (struct chipone_ts_data*)dev_id;
+    struct chipone_ts_data *data = (struct chipone_ts_data*)dev_id;
 
-	if(!work_pending(&data->irq_work))
-	    queue_work(data->irq_workqueue, &data->irq_work);
+    if(!work_pending(&data->irq_work))
+	queue_work(data->irq_workqueue, &data->irq_work);
 
-	return IRQ_HANDLED;
+    return IRQ_HANDLED;
 }
 
 static void chipone_ts_dowork(struct work_struct* work)
 {
-	struct chipone_ts_data *data = container_of(work, struct chipone_ts_data, irq_work);
-	struct device* dev = &data->client->dev;
-	struct chipone_ts_coordinate_area_regs coordinatearea;
-	int i;
+    struct chipone_ts_data *data = container_of(work, struct chipone_ts_data, irq_work);
+    struct device* dev = &data->client->dev;
+    struct chipone_ts_coordinate_area_regs coordinatearea;
+    int i;
 
-	if(chipone_ts_regs_get_header_area(data->client, &data->last_header_area) < 0)
+    if(chipone_ts_regs_get_header_area(data->client, &data->last_header_area) < 0)
+    {
+	dev_err(dev, "Cannot read header\n");
+	return;
+    }
+
+    if(chipone_ts_regs_get_coordinate_area(data->client, &coordinatearea) < 0)
+    {
+	dev_err(dev, "Cannot read coordinates\n");
+	return;
+    }
+
+    if((coordinatearea.gesture_id == 0) && (coordinatearea.num_pointer > 0)) // NOTE: gesture_id == 0 -> touch?
+    {
+	for(i = 0; i < coordinatearea.num_pointer; i++)
 	{
-	    dev_err(dev, "Cannot read header\n");
-	    return;
+	    input_mt_slot(data->input, i);
+	    input_mt_report_slot_state(data->input, MT_TOOL_FINGER, chipone_ts_regs_is_finger_down(&coordinatearea, i));
+	    input_report_abs(data->input, ABS_MT_PRESSURE, coordinatearea.pointer[i].pressure);
+	    input_report_abs(data->input, ABS_MT_POSITION_X, X_POSITION(coordinatearea, i));
+	    input_report_abs(data->input, ABS_MT_POSITION_Y, Y_POSITION(coordinatearea, i));
 	}
 
-	if(chipone_ts_regs_get_coordinate_area(data->client, &coordinatearea) < 0)
-	{
-	    dev_err(dev, "Cannot read coordinates\n");
-	    return;
-	}
+	input_mt_sync_frame(data->input);
+	input_sync(data->input);
+    }
 
-	if((coordinatearea.gesture_id == 0) && (coordinatearea.num_pointer > 0)) // NOTE: gesture_id == 0 -> touch?
-	{
-	    for(i = 0; i < coordinatearea.num_pointer; i++)
-	    {
-		input_mt_slot(data->input, i);
-		input_mt_report_slot_state(data->input, MT_TOOL_FINGER, chipone_ts_regs_is_finger_down(&coordinatearea, i));
-		input_report_abs(data->input, ABS_MT_PRESSURE, coordinatearea.pointer[i].pressure);
-		input_report_abs(data->input, ABS_MT_POSITION_X, X_POSITION(coordinatearea, i));
-		input_report_abs(data->input, ABS_MT_POSITION_Y, Y_POSITION(coordinatearea, i));
-	    }
-	    
-	    input_mt_sync_frame(data->input);
-	    input_sync(data->input);
-	}
+    if(coordinatearea.gesture_id & GESTURE_ID_KEY0)
+    {
+	dev_info(dev, "Windows logo pressed\n");
+    }
 
-	if(coordinatearea.gesture_id & GESTURE_ID_KEY0)
-	{
-	    dev_info(dev, "Windows logo pressed\n");
-	}
-
-	data->last_coordinate_area = coordinatearea; // Save last touch information
+    data->last_coordinate_area = coordinatearea; // Save last touch information
 }
 
 static int chipone_ts_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	struct device *dev = &client->dev;
-	struct chipone_ts_data *data;
-	int err;
+    struct device *dev = &client->dev;
+    struct chipone_ts_data *data;
+    int err;
 
-	/*
-	 * FIXME: Kernel complains at boot, and client->irq == 0
-	 * [    3.816640] i2c_hid i2c-CHPN0001:00: Failed to get GPIO interrupt
-	 *
-	if(!client->irq)
-	{
-		dev_err(dev, "%s, no IRQ specified\n", __func__);
-		return -EINVAL;
-	}
-	*/
+    /*
+     * FIXME: Kernel complains at boot, and client->irq == 0
+     * [    3.816640] i2c_hid i2c-CHPN0001:00: Failed to get GPIO interrupt
+     *
+     if(!client->irq)
+     {
+	 dev_err(dev, "%s, no IRQ specified\n", __func__);
+	 return -EINVAL;
+     }
+     */
 
-	dev_info(dev, "Kernel reports IRQ: 0x%x\n", client->irq);
-	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
+    dev_info(dev, "Screen resolution: %dx%d\n", screen_max_x, screen_max_y);
+    dev_info(dev, "Kernel reports IRQ: 0x%x\n", client->irq);
 
-	if(!data)
-	{
-		dev_err(dev, "Cannot allocate device data\n");
-		return -ENOMEM;
-	}
+    data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
 
-	i2c_set_clientdata(client, data);
-	data->client = client;
-	err = chipone_ts_create_input_device(client, data);
+    if(!data)
+    {
+	dev_err(dev, "Cannot allocate device data\n");
+	return -ENOMEM;
+    }
 
-	if(err)
-	{
-		dev_err(dev, "Input device creation failed\n");
-		return err;
-	}
+    if(custom_irq != 0)
+    {
+	dev_warn(dev, "Using custom IRQ: 0x%x\n", custom_irq);
+	data->irq = custom_irq;
+    }
+    else if(client->irq != 0)
+    {
+	dev_info(dev, "Detected IRQ: 0x%x\n", client->irq);
+	data->irq = client->irq;
+    }
+    else
+    {
+	dev_warn(dev, "Using hardcoded IRQ: 0x%x\n", CHIPONE_IRQ);
+	data->irq = CHIPONE_IRQ;
+    }
 
-	if(chipone_ts_fw_update(client, FIRMWARE_FILE) != 0)
-		return -EINVAL;
+    data->client = client;
+    i2c_set_clientdata(client, data);
+    err = chipone_ts_create_input_device(client, data);
 
-	INIT_WORK(&data->irq_work, chipone_ts_dowork);
-	data->irq_workqueue = create_singlethread_workqueue(dev_name(dev));
-	err = request_irq(CHIPONE_IRQ, chipone_ts_irq, 0, client->name, data);
+    if(err)
+    {
+	dev_err(dev, "Input device creation failed\n");
+	return err;
+    }
 
-	if(err != 0)
-	{
-		dev_err(dev, "IRQ Handler initialization failed for IRQ %x, error: %d\n", CHIPONE_IRQ, err);
-		return -EINVAL;
-	}
+    if(chipone_ts_fw_update(client, FIRMWARE_FILE) != 0)
+	return -EINVAL;
 
-	return chipone_ts_sysfs_create(data);
+    INIT_WORK(&data->irq_work, chipone_ts_dowork);
+    data->irq_workqueue = create_singlethread_workqueue(dev_name(dev));
+    err = request_irq(data->irq, chipone_ts_irq, 0, client->name, data);
+
+    if(err != 0)
+    {
+	dev_err(dev, "IRQ Handler initialization failed for IRQ %x, error: %d\n", data->irq, err);
+	return -EINVAL;
+    }
+
+    return chipone_ts_sysfs_create(data);
 }
 
 static int chipone_ts_remove(struct i2c_client *client)
@@ -171,30 +197,30 @@ static int chipone_ts_remove(struct i2c_client *client)
 }
 
 static const struct acpi_device_id chipone_ts_acpi_id[] = {
-        {"CHPN0001", 0},
-        { }
+    {"CHPN0001", 0},
+    { }
 };
 
 MODULE_DEVICE_TABLE(acpi, chipone_ts_acpi_id);
 
 static const struct i2c_device_id chipone_ts_id[] = {
-        {CHIPONE_NAME, 0},
-        { }
+    {CHIPONE_NAME, 0},
+    { }
 };
 
 MODULE_DEVICE_TABLE(i2c, chipone_ts_id);
 
 static struct i2c_driver chipone_ts_driver = {
-	.class    = I2C_CLASS_HWMON,
-	.probe    = chipone_ts_probe,
-	.remove   = chipone_ts_remove,
-	.id_table = chipone_ts_id,
+    .class    = I2C_CLASS_HWMON,
+    .probe    = chipone_ts_probe,
+    .remove   = chipone_ts_remove,
+    .id_table = chipone_ts_id,
 
-	.driver = {
-		.name             = CHIPONE_NAME,
-		.owner            = THIS_MODULE,
-		.acpi_match_table = ACPI_PTR(chipone_ts_acpi_id),
-	},
+    .driver = {
+	.name             = CHIPONE_NAME,
+	.owner            = THIS_MODULE,
+	.acpi_match_table = ACPI_PTR(chipone_ts_acpi_id),
+    },
 };
 
 module_i2c_driver(chipone_ts_driver);
