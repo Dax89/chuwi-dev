@@ -6,7 +6,7 @@ KDIR            = $(KMOD)/build
 KMODDEST        = $(KMOD)/kernel/drivers/input/touchscreen/
 
 obj-m           = $(TARGET).o 
-$(TARGET)-objs  = chipone_main.o chipone_fw.o chipone_regs.o
+$(TARGET)-objs  = chipone_main.o chipone_fw.o chipone_regs.o chipone_sysfs.o
 
 default:
 	$(MAKE) -C $(KDIR) M=$(PWD) modules

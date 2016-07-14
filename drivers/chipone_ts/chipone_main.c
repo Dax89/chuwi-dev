@@ -7,28 +7,9 @@
 #include <linux/input.h>
 #include <linux/input/mt.h>
 #include "chipone_fw.h"
-#include "chipone_regs.h"
-
-#define CHIPONE_NAME "chipone_ts"
-
-#ifdef CONFIG_HI10
-    #define SCREEN_MAX_X 1920
-    #define SCREEN_MAX_Y 1080
-    #define CHIPONE_IRQ  0xB9 // HACK: Hardcode IRQ, kernel doesn't get it at boot time
-#else  //CONFIG_VI10U
-    #define SCREEN_MAX_X 1366
-    #define SCREEN_MAX_Y 768
-    #define CHIPONE_IRQ  0x64 // HACK: Hardcode IRQ, kernel doesn't get it at boot time
-#endif
-
-struct chipone_ts_data
-{
-	struct i2c_client* client;
-	struct input_dev *input;
-	struct workqueue_struct* irq_workqueue;
-	struct work_struct irq_work;
-	struct chipone_ts_coordinate_area_regs last_coordinate_area;
-};
+#include "chipone_sysfs.h"
+#include "chipone_types.h"
+#include "chipone.h"
 
 static int chipone_ts_create_input_device(struct i2c_client *client, struct chipone_ts_data *data)
 {
@@ -83,13 +64,17 @@ static void chipone_ts_dowork(struct work_struct* work)
 	struct chipone_ts_coordinate_area_regs coordinatearea;
 	int i;
 
+	if(chipone_ts_regs_get_header_area(data->client, &data->last_header_area) < 0)
+	{
+	    dev_err(dev, "Cannot read header");
+	    return;
+	}
+
 	if(chipone_ts_regs_get_coordinate_area(data->client, &coordinatearea) < 0)
 	{
 	    dev_err(dev, "Cannot read coordinates\n");
 	    return;
 	}
-
-	//dev_info(dev, "GestureId: %02X\n", coordinatearea.gesture_id);
 
 	if((coordinatearea.gesture_id == 0) && (coordinatearea.num_pointer > 0)) // NOTE: gesture_id == 0 -> touch?
 	{
@@ -163,7 +148,7 @@ static int chipone_ts_probe(struct i2c_client *client, const struct i2c_device_i
 		return -EINVAL;
 	}
 
-	return 0;
+	return chipone_ts_sysfs_create(data);
 }
 
 static int chipone_ts_remove(struct i2c_client *client)
@@ -172,10 +157,11 @@ static int chipone_ts_remove(struct i2c_client *client)
 
     if(!data)
     {
-	printk("%s, cannot get userdata from i2c_client\n", __func__);
+	dev_err(&client->dev, "%s, cannot get userdata from i2c_client\n", __func__);
 	return -EINVAL;
     }
 
+    chipone_ts_sysfs_remove(data);
     destroy_workqueue(data->irq_workqueue);
 
     if(client->irq)
