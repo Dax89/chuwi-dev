@@ -142,7 +142,7 @@ static int chipone_ts_probe(struct i2c_client *client, const struct i2c_device_i
 	return err;
     }
 
-    if(chipone_ts_fw_update(client, FIRMWARE_FILE) != 0)
+    if(chipone_ts_fw_update(client) != 0)
 	return -EINVAL;
 
     INIT_WORK(&data->irq_work, chipone_ts_dowork);
@@ -205,7 +205,6 @@ static struct i2c_driver chipone_ts_driver = {
 module_i2c_driver(chipone_ts_driver);
 
 MODULE_SOFTDEP("pre: pinctrl_cherryview");
-MODULE_FIRMWARE("chipone_ts/icnfirmware.bin");
 MODULE_DESCRIPTION("ChipOne touchscreen controller driver");
 MODULE_AUTHOR("Antonio Davide Trogu trogu.davide@gmail.com");
 MODULE_VERSION("1.0");

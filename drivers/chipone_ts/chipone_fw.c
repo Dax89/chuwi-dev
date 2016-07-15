@@ -7,6 +7,12 @@
 #include "chipone_fw.h"
 #include "chipone.h"
 
+#ifdef CONFIG_HI10
+    #include "chipone_fw_v300.h"
+#else
+    #include "chipone_fw_v200.h"
+#endif
+
 #define B_SIZE 32
 
 static unsigned int crc32table[256] = {    
@@ -55,45 +61,6 @@ static unsigned int crc32table[256] = {
  0xbcb4666d, 0xb8757bda, 0xb5365d03, 0xb1f740b4
 };
  
-static struct file* chipone_ts_fw_open(const char *firmware, int *filesize)
-{
-    struct file* fp = NULL;
-    mm_segment_t oldfs;
-
-    oldfs = get_fs();
-    set_fs(get_ds());
-
-    fp = filp_open(firmware, O_RDONLY, 0);
-    set_fs(oldfs);
-
-    if(IS_ERR(fp))
-        return NULL;
-
-    if(filesize)
-        *filesize = fp->f_path.dentry->d_inode->i_size;
-
-    return fp;
-}
-
-static void chipone_ts_fw_close(struct file *fp)
-{
-    filp_close(fp, NULL);
-}
-
-static int chipone_ts_fw_read(struct file *fp, unsigned long long offset, unsigned char *data, unsigned int size)
-{
-    mm_segment_t oldfs;
-    int ret;
-
-    oldfs = get_fs();
-    set_fs(get_ds());
-
-    ret = vfs_read(fp, data, size, &offset);
-
-    set_fs(oldfs);
-    return ret;
-}
-
 static int chipone_ts_fw_i2c_txdata(struct i2c_client *client, unsigned int addr, char* txdata, int length)
 {
     struct device *dev = &client->dev;
@@ -287,24 +254,19 @@ static int chipone_ts_fw_crc_check(struct i2c_client *client, unsigned int crc, 
 
     dev_info(dev, "crcresult vs crc: 0x%x -> 0x%x\n", crcresult, crc);
     dev_info(dev, "crclen vs len: %d -> %d\n", crclen, len);
+
+    if(crclen != len)
+        return -2;
+
     return -1;
 }
 
-int chipone_ts_fw_update(struct i2c_client *client, const char *firmware)
+int chipone_ts_fw_update(struct i2c_client *client)
 {
-    char buf[B_SIZE];
     struct device *dev = &client->dev;
-    struct file* fp = NULL;
+    unsigned char* buf;
     unsigned int crcfw;
-    int i, filesize, num, lastlength;
-
-    fp = chipone_ts_fw_open(firmware, &filesize);
-
-    if(!fp)
-    {
-        dev_err(dev, "Cannot open firmware: %s\n", firmware);
-        return -1;
-    }
+    int i, num, lastlength, res;
 
     if(chipone_ts_fw_goto_progmode(client) != 0)
     {
@@ -314,34 +276,40 @@ int chipone_ts_fw_update(struct i2c_client *client, const char *firmware)
 
     msleep(1);
     chipone_ts_fw_crc_enable(client, 1);
-    dev_info(dev, "Downloading firmware '%s'...\n", firmware);
+    dev_info(dev, "Downloading firmware '%s'\n", FIRMWARE_VERSION);
 
-    num = filesize / B_SIZE;
+    num = FIRMWARE_BIN_LEN/ B_SIZE;
     crcfw = 0;
 
     for(i = 0; i < num; i++)
     {
-        chipone_ts_fw_read(fp, i * B_SIZE, buf, B_SIZE);
+        buf = FIRMWARE_BIN + (i * B_SIZE);
         crcfw = chipone_ts_fw_crc_calc(crcfw, buf, B_SIZE);
         chipone_ts_fw_i2c_txdata(client, i * B_SIZE, buf, B_SIZE); // Download firmware
     }
 
-    lastlength = filesize - B_SIZE * i;
+    lastlength = FIRMWARE_BIN_LEN - B_SIZE * i;
 
     if(lastlength > 0) // Download last chunk, if any
     {
-        chipone_ts_fw_read(fp, i * B_SIZE, buf, lastlength);
+        buf = FIRMWARE_BIN + (i * B_SIZE);
         crcfw = chipone_ts_fw_crc_calc(crcfw, buf, lastlength);
         chipone_ts_fw_i2c_txdata(client, i * B_SIZE, buf, lastlength); // Download firmware
     }
 
-    chipone_ts_fw_close(fp);
     chipone_ts_fw_crc_enable(client, 0);
+    res = chipone_ts_fw_crc_check(client, crcfw, FIRMWARE_BIN_LEN);
 
-    if(chipone_ts_fw_crc_check(client, crcfw, filesize) != 0)
+    if(res != 0)
     {
-        dev_err(dev, "Firmware download failed: CRC Error\n");
-        return -1;
+        if(res == -1)
+            dev_err(dev, "Firmware download failed: CRC Error\n");
+        else if(res == -2)
+            dev_err(dev, "Firmware download failed: Length Error\n");
+        else
+            dev_err(dev, "Firmware download failed: Unknown Error: %d\n", res);
+
+        return res;
     }
 
     dev_info(dev, "Firmware download completed, CRC OK\n");
