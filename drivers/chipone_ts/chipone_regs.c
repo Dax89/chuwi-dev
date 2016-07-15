@@ -42,7 +42,6 @@ static int chipone_ts_regs_i2c_rxdata(struct i2c_client* client, unsigned short 
 
 }
 
-/*
 static int chipone_ts_regs_i2c_txdata(struct i2c_client *client, unsigned short addr, char *txdata, int length)
 {
     struct device *dev = &client->dev;
@@ -60,7 +59,7 @@ static int chipone_ts_regs_i2c_txdata(struct i2c_client *client, unsigned short 
 
     if (length > 125)
     {
-        dev_err("%s: too big datalen = %d!\n", __func__, length);
+        dev_err(dev, "%s: too big datalen = %d!\n", __func__, length);
         return -1;
     }
 
@@ -85,7 +84,6 @@ static int chipone_ts_regs_i2c_txdata(struct i2c_client *client, unsigned short 
 
     return ret;
 }
-*/
 
 bool chipone_ts_regs_is_finger_down(struct chipone_ts_coordinate_area_regs *coordinatearearegs, int idx)
 {
@@ -95,10 +93,25 @@ bool chipone_ts_regs_is_finger_down(struct chipone_ts_coordinate_area_regs *coor
 
 int chipone_ts_regs_get_header_area(struct i2c_client* client, struct chipone_ts_header_area_regs* headerarearegs)
 {
-    return chipone_ts_regs_i2c_rxdata(client, 0x0000, (char*)headerarearegs, sizeof(*headerarearegs));
+    return chipone_ts_regs_i2c_rxdata(client, HEADER_AREA_BASE, (char*)headerarearegs, sizeof(*headerarearegs));
 }
 
 int chipone_ts_regs_get_coordinate_area(struct i2c_client* client, struct chipone_ts_coordinate_area_regs* coordinatearearegs)
 {
-    return chipone_ts_regs_i2c_rxdata(client, 0x1000, (char*)coordinatearearegs, sizeof(*coordinatearearegs));
+    return chipone_ts_regs_i2c_rxdata(client, COORDINATE_AREA_BASE, (char*)coordinatearearegs, sizeof(*coordinatearearegs));
 }
+
+int chipone_ts_regs_get_configuration_area(struct i2c_client* client, struct chipone_ts_configuration_area_regs* configurationarea)
+{
+    return chipone_ts_regs_i2c_rxdata(client, CONFIGURATION_AREA_BASE, (char*)configurationarea, sizeof(*configurationarea));
+}
+
+int chipone_ts_regs_set_resolution(struct i2c_client* client, u16 width, u16 height)
+{
+    int res = chipone_ts_regs_i2c_txdata(client, CONFIGURATION_AREA_BASE + offsetof(struct chipone_ts_configuration_area_regs, res_x), (char*)&height, sizeof(u16));
+
+    if(res < 0)
+        return res;
+
+    return chipone_ts_regs_i2c_txdata(client, CONFIGURATION_AREA_BASE + offsetof(struct chipone_ts_configuration_area_regs, res_y), (char*)&width, sizeof(u16));
+} 

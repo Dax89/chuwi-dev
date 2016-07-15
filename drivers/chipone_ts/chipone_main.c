@@ -7,6 +7,7 @@
 #include <linux/input.h>
 #include <linux/input/mt.h>
 #include "chipone_fw.h"
+#include "chipone_regs.h"
 #include "chipone_sysfs.h"
 #include "chipone_types.h"
 #include "chipone.h"
@@ -144,6 +145,9 @@ static int chipone_ts_probe(struct i2c_client *client, const struct i2c_device_i
 
     if(chipone_ts_fw_update(client) != 0)
 	return -EINVAL;
+
+    if(chipone_ts_regs_set_resolution(client, screen_max_x, screen_max_y) < 0)
+	dev_warn(dev, "Cannot set screen resolution\n");
 
     INIT_WORK(&data->irq_work, chipone_ts_dowork);
     data->irq_workqueue = create_singlethread_workqueue(dev_name(dev));

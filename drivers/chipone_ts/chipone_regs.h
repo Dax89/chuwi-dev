@@ -4,6 +4,10 @@
 #include <linux/types.h>
 #include <linux/i2c.h>
 
+#define HEADER_AREA_BASE        0x0000
+#define COORDINATE_AREA_BASE    0x1000
+#define CONFIGURATION_AREA_BASE 0x8000
+
 #define WORK_MODE_NORMAL  0
 #define WORK_MODE_FACTORY 1
 #define WORK_MODE_CONFIG  2
@@ -22,11 +26,14 @@
 #define GESTURE_ID_KEY2 0b00000100 
 #define GESTURE_ID_KEY3 0b00001000 
 
+#define PHYSICAL_MAX_NUM_ROW 42
+#define PHYSICAL_MAX_NUM_COL 30
+#define PHYSICAL_MAX_VK_NUM  4
+
 #define MAX_POINTS 10
 
 #define X_POSITION(ca, idx) (((u16)ca.pointer[idx].xh << 8) | ca.pointer[idx].xl)
 #define Y_POSITION(ca, idx) (((u16)ca.pointer[idx].yh << 8) | ca.pointer[idx].yl)
-#define IS_TOUCH_VALID(ca, idx) (X_POSITION(ca, idx) && Y_POSITION(ca, idx))
 
 struct chipone_ts_header_area_regs
 {
@@ -65,8 +72,37 @@ struct chipone_ts_coordinate_area_regs
 	struct chipone_ts_pointer pointer[MAX_POINTS];
 };
 
+struct chipone_ts_configuration_area_regs
+{
+	u16 res_x;
+	u16 res_y;
+	u8 row_num;
+	u8 col_num;
+	u8 tx_order[PHYSICAL_MAX_NUM_ROW];
+	u8 rx_order[PHYSICAL_MAX_NUM_COL];
+	u8 num_vkey;
+	u8 vkey_mode;
+	u8 tp_vk_order[PHYSICAL_MAX_VK_NUM];
+	u8 vk_down_threshold;
+	u8 vk_up_threshold;
+	u8 max_touch_num;
+	u8 threshold_dync_mode;
+	u8 high_sense_threshold;
+	u8 touch_up_threshold;
+	u8 touch_down_threshold;
+	u8 touch_charger_threshold;
+	u8 xy_swap;
+	u8 int_mode;
+	u8 int_mode_keep_time;
+	u8 gpio_vol;
+	u8 report_rate;
+	u8 enter_monitor_cnt;
+};
+
 bool chipone_ts_regs_is_finger_down(struct chipone_ts_coordinate_area_regs *coordinatearearegs, int idx);
 int chipone_ts_regs_get_header_area(struct i2c_client* client, struct chipone_ts_header_area_regs* headerarearegs);
 int chipone_ts_regs_get_coordinate_area(struct i2c_client* client, struct chipone_ts_coordinate_area_regs* coordinatearearegs);
+int chipone_ts_regs_get_configuration_area(struct i2c_client* client, struct chipone_ts_configuration_area_regs* configurationarea);
+int chipone_ts_regs_set_resolution(struct i2c_client* client, u16 width, u16 height);
 
 #endif // CHIPONE_TS_H

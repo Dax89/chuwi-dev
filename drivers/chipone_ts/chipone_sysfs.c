@@ -3,6 +3,7 @@
 #include <linux/i2c.h>
 #include <linux/string.h>
 #include "chipone_sysfs.h"
+#include "chipone_regs.h"
 #include "chipone.h"
 
 static ssize_t chipone_ts_sysfs_headerarea_show(struct device *dev, struct device_attribute* attribute, char* buf)
@@ -43,6 +44,21 @@ static ssize_t chipone_ts_sysfs_coordinatearea_show(struct device *dev, struct d
                         "num_pointer: %x\n", c->gesture_id, c->num_pointer);
 }
 
+static ssize_t chipone_ts_sysfs_configurationarea_show(struct device *dev, struct device_attribute* attribute, char* buf)
+{
+    struct i2c_client* client = to_i2c_client(dev);
+    struct chipone_ts_configuration_area_regs c;
+
+    chipone_ts_regs_get_configuration_area(client, &c);
+    
+    return sprintf(buf, "res_x: %d\n"
+                        "res_y: %d\n"
+                        "row_num: %d\n"
+                        "col_num: %d\n", c.res_x, c.res_y,
+                                         c.row_num, c.col_num);
+
+}
+
 static ssize_t chipone_ts_sysfs_irq_show(struct device *dev, struct device_attribute* attribute, char* buf)
 {
     struct i2c_client* client = to_i2c_client(dev);
@@ -51,11 +67,13 @@ static ssize_t chipone_ts_sysfs_irq_show(struct device *dev, struct device_attri
 
 static DEVICE_ATTR(headerarea, S_IRUGO, chipone_ts_sysfs_headerarea_show, NULL);
 static DEVICE_ATTR(coordinatearea, S_IRUGO, chipone_ts_sysfs_coordinatearea_show, NULL);
+static DEVICE_ATTR(configurationarea, S_IRUGO, chipone_ts_sysfs_configurationarea_show, NULL);
 static DEVICE_ATTR(irq, S_IRUGO, chipone_ts_sysfs_irq_show, NULL);
 
 static struct attribute* chipone_ts_sysfs_attrs[] = {
     &dev_attr_headerarea.attr,
     &dev_attr_coordinatearea.attr,
+    &dev_attr_configurationarea.attr,
     &dev_attr_irq.attr,
     NULL,
 };

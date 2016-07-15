@@ -7,11 +7,11 @@
 #include "chipone_fw.h"
 #include "chipone.h"
 
-#ifdef CONFIG_HI10
-    #include "chipone_fw_v300.h"
-#else
+//#ifdef CONFIG_HI10
+    //#include "chipone_fw_v300.h"
+//#else
     #include "chipone_fw_v200.h"
-#endif
+//#endif
 
 #define B_SIZE 32
 
