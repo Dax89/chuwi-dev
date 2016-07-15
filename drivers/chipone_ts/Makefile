@@ -16,8 +16,6 @@ hi10:
 
 install:
 	install -p -m 644 $(TARGET).ko  $(KMODDEST)
-	@mkdir -p /lib/firmware/chipone_ts/
-	@cp -n icnfirmware.bin /lib/firmware/chipone_ts/icnfirmware.bin
 	/sbin/depmod -a $(KVER)
 
 uninstall:
