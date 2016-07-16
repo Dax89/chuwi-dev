@@ -30,7 +30,10 @@ static int chipone_ts_create_input_device(struct i2c_client *client, struct chip
 
     input->name = client->name;
 
-    __set_bit(INPUT_PROP_DIRECT, input->propbit);
+    set_bit(INPUT_PROP_DIRECT, input->propbit);
+    set_bit(EV_KEY, input->evbit);    // This device supports keys
+    set_bit(KEY_LEFTMETA, input->keybit); 
+
     input_mt_init_slots(input, MAX_POINTS, 0);
     input_set_abs_params(input, ABS_MT_POSITION_X, 0, screen_max_x, 0, 0);
     input_set_abs_params(input, ABS_MT_POSITION_Y, 0, screen_max_y, 0, 0);
@@ -58,7 +61,7 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id)
     struct chipone_ts_data *data = (struct chipone_ts_data*)dev_id;
     struct device* dev = &data->client->dev;
     struct chipone_ts_coordinate_area_regs coordinatearea;
-    bool gesturechanged;
+    bool gesturechanged, needsync = false;
     int i;
 
     if(chipone_ts_regs_get_header_area(data->client, &data->last_header_area) < 0)
@@ -75,7 +78,7 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id)
 
     gesturechanged = coordinatearea.gesture_id != data->last_coordinate_area.gesture_id;
 
-    if((coordinatearea.gesture_id == 0) && (coordinatearea.num_pointer > 0)) // NOTE: gesture_id == 0 -> touch?
+    if((coordinatearea.gesture_id == 0) && (coordinatearea.num_pointer > 0))
     {
 	for(i = 0; i < coordinatearea.num_pointer; i++)
 	{
@@ -88,13 +91,18 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id)
 	}
 
 	input_mt_sync_frame(data->input);
-	input_sync(data->input);
+	needsync = true;
     }
 
     if(gesturechanged && (coordinatearea.gesture_id & GESTURE_ID_KEY0))
     {
-	dev_info(dev, "Windows logo pressed\n");
+	input_report_key(data->input, KEY_LEFTMETA, 1);
+	input_report_key(data->input, KEY_LEFTMETA, 0);
+	needsync = true;
     }
+
+    if(needsync)
+	input_sync(data->input);
 
     data->last_coordinate_area = coordinatearea; // Save last touch information
     return IRQ_HANDLED;
