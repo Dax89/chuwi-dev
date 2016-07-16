@@ -58,6 +58,7 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id)
     struct chipone_ts_data *data = (struct chipone_ts_data*)dev_id;
     struct device* dev = &data->client->dev;
     struct chipone_ts_coordinate_area_regs coordinatearea;
+    bool gesturechanged;
     int i;
 
     if(chipone_ts_regs_get_header_area(data->client, &data->last_header_area) < 0)
@@ -72,13 +73,16 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id)
 	return IRQ_HANDLED;
     }
 
+    gesturechanged = coordinatearea.gesture_id != data->last_coordinate_area.gesture_id;
+
     if((coordinatearea.gesture_id == 0) && (coordinatearea.num_pointer > 0)) // NOTE: gesture_id == 0 -> touch?
     {
 	for(i = 0; i < coordinatearea.num_pointer; i++)
 	{
 	    input_mt_slot(data->input, i);
 	    input_mt_report_slot_state(data->input, MT_TOOL_FINGER, chipone_ts_regs_is_finger_down(&coordinatearea, i));
-	    input_report_abs(data->input, ABS_MT_PRESSURE, coordinatearea.pointer[i].pressure);
+	    input_report_abs(data->input, ABS_MT_TOUCH_MAJOR, coordinatearea.pointer[i].pressure);
+	    input_report_abs(data->input, ABS_MT_WIDTH_MAJOR, coordinatearea.pointer[i].pressure);
 	    input_report_abs(data->input, ABS_MT_POSITION_X, X_POSITION(coordinatearea, i));
 	    input_report_abs(data->input, ABS_MT_POSITION_Y, Y_POSITION(coordinatearea, i));
 	}
@@ -87,7 +91,7 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id)
 	input_sync(data->input);
     }
 
-    if(coordinatearea.gesture_id & GESTURE_ID_KEY0)
+    if(gesturechanged && (coordinatearea.gesture_id & GESTURE_ID_KEY0))
     {
 	dev_info(dev, "Windows logo pressed\n");
     }
