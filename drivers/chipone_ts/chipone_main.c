@@ -3,7 +3,6 @@
 #include <linux/i2c.h>
 #include <linux/device.h>
 #include <linux/interrupt.h>
-#include <linux/workqueue.h>
 #include <linux/input.h>
 #include <linux/input/mt.h>
 #include "chipone_fw.h"
@@ -54,19 +53,9 @@ static int chipone_ts_create_input_device(struct i2c_client *client, struct chip
     return 0;
 }
 
-static irqreturn_t chipone_ts_irq(int irq, void* dev_id)
+static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id)
 {
     struct chipone_ts_data *data = (struct chipone_ts_data*)dev_id;
-
-    if(!work_pending(&data->irq_work))
-	queue_work(data->irq_workqueue, &data->irq_work);
-
-    return IRQ_HANDLED;
-}
-
-static void chipone_ts_dowork(struct work_struct* work)
-{
-    struct chipone_ts_data *data = container_of(work, struct chipone_ts_data, irq_work);
     struct device* dev = &data->client->dev;
     struct chipone_ts_coordinate_area_regs coordinatearea;
     int i;
@@ -74,13 +63,13 @@ static void chipone_ts_dowork(struct work_struct* work)
     if(chipone_ts_regs_get_header_area(data->client, &data->last_header_area) < 0)
     {
 	dev_err(dev, "Cannot read header\n");
-	return;
+	return IRQ_HANDLED;
     }
 
     if(chipone_ts_regs_get_coordinate_area(data->client, &coordinatearea) < 0)
     {
 	dev_err(dev, "Cannot read coordinates\n");
-	return;
+	return IRQ_HANDLED;
     }
 
     if((coordinatearea.gesture_id == 0) && (coordinatearea.num_pointer > 0)) // NOTE: gesture_id == 0 -> touch?
@@ -104,6 +93,7 @@ static void chipone_ts_dowork(struct work_struct* work)
     }
 
     data->last_coordinate_area = coordinatearea; // Save last touch information
+    return IRQ_HANDLED;
 }
 
 static int chipone_ts_probe(struct i2c_client *client, const struct i2c_device_id *id)
@@ -149,9 +139,7 @@ static int chipone_ts_probe(struct i2c_client *client, const struct i2c_device_i
     if(chipone_ts_regs_set_resolution(client, screen_max_x, screen_max_y) < 0)
 	dev_warn(dev, "Cannot set screen resolution\n");
 
-    INIT_WORK(&data->irq_work, chipone_ts_dowork);
-    data->irq_workqueue = create_singlethread_workqueue(dev_name(dev));
-    err = request_irq(data->irq, chipone_ts_irq, 0, client->name, data);
+    err = devm_request_threaded_irq(dev, data->irq, NULL, chipone_ts_irq_handler, IRQF_ONESHOT, client->name, data);
 
     if(err != 0)
     {
@@ -173,10 +161,6 @@ static int chipone_ts_remove(struct i2c_client *client)
     }
 
     chipone_ts_sysfs_remove(data);
-    flush_workqueue(data->irq_workqueue);
-    destroy_workqueue(data->irq_workqueue);
-    free_irq(data->irq, data);
-
     return 0;
 }
 

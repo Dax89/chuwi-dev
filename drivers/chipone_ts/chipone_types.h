@@ -12,8 +12,6 @@ struct chipone_ts_data
 	unsigned int irq;
 	struct i2c_client* client;
 	struct input_dev *input;
-	struct workqueue_struct* irq_workqueue;
-	struct work_struct irq_work;
 	struct chipone_ts_header_area_regs last_header_area;
 	struct chipone_ts_coordinate_area_regs last_coordinate_area;
 };
