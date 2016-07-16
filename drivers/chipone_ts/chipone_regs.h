@@ -72,7 +72,7 @@ struct chipone_ts_coordinate_area_regs
 	struct chipone_ts_pointer pointer[MAX_POINTS];
 };
 
-struct chipone_ts_configuration_area_regs
+struct chipone_ts_configuration_area_regs // NOTE: Needs investigation
 {
 	u16 res_x;
 	u16 res_y;
@@ -86,14 +86,18 @@ struct chipone_ts_configuration_area_regs
 	u8 vk_down_threshold;
 	u8 vk_up_threshold;
 	u8 max_touch_num;
+	u8 reserved1[0x12];
 	u8 threshold_dync_mode;
 	u8 high_sense_threshold;
+	u8 reserved2[0x02];
 	u8 touch_up_threshold;
 	u8 touch_down_threshold;
 	u8 touch_charger_threshold;
+	u8 reserved3[0x4A];
 	u8 xy_swap;
 	u8 int_mode;
-	u8 int_mode_keep_time;
+	u8 int_keep_time;
+	u8 wake_up_pol;
 	u8 gpio_vol;
 	u8 report_rate;
 	u8 enter_monitor_cnt;

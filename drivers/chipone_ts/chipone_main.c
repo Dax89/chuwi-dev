@@ -5,6 +5,7 @@
 #include <linux/interrupt.h>
 #include <linux/input.h>
 #include <linux/input/mt.h>
+#include <linux/timekeeping.h>
 #include "chipone_fw.h"
 #include "chipone_regs.h"
 #include "chipone_sysfs.h"
@@ -76,6 +77,7 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id)
 	return IRQ_HANDLED;
     }
 
+    do_gettimeofday(&data->last_irq_event);
     gesturechanged = coordinatearea.gesture_id != data->last_coordinate_area.gesture_id;
 
     if((coordinatearea.gesture_id == 0) && (coordinatearea.num_pointer > 0))
