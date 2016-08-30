@@ -14,6 +14,9 @@ default:
 hi10:
 	KCPPFLAGS="-DCONFIG_HI10=1" $(MAKE) default 
 
+vi8plus:
+	KCPPFLAGS="-DCONFIG_VI8PLUS=1" $(MAKE) default 
+
 install:
 	install -p -m 644 $(TARGET).ko  $(KMODDEST)
 	/sbin/depmod -a $(KVER)
