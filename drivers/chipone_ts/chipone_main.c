@@ -131,10 +131,15 @@ static int chipone_ts_probe(struct i2c_client *client, const struct i2c_device_i
 	dev_info(dev, "Detected IRQ: 0x%x\n", client->irq);
 	data->irq = client->irq;
     }
-    else
+    else if(CHIPONE_IRQ)
     {
 	dev_warn(dev, "Using hardcoded IRQ: 0x%x\n", CHIPONE_IRQ);
 	data->irq = CHIPONE_IRQ;
+    }
+    else
+    {
+	dev_err(dev, "Cannot get IRQ\n");
+	return -EINVAL;
     }
 
     data->client = client;

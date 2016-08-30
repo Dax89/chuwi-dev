@@ -6,9 +6,9 @@
 #define CHIPONE_NAME           "CHPN0001"
 
 #ifdef CONFIG_VI8PLUS
-    #define SCREEN_MAX_X 1280
-    #define SCREEN_MAX_Y 800
-    #define CHIPONE_IRQ  0x00 // NOTE: Unknown IRQ
+    #define SCREEN_MAX_X 1920
+    #define SCREEN_MAX_Y 1200
+    #define CHIPONE_IRQ  0x5C // HACK: Hardcode IRQ, kernel doesn't get it at boot time
 #elif CONFIG_HI10
     #define SCREEN_MAX_X 1920
     #define SCREEN_MAX_Y 1200
