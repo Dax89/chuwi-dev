@@ -1,13 +1,8 @@
-# Chuwi Tablets' development repository
+# Chipone Touch Screen
 
-This repository aims to bring Linux support to Chuwi Tablets.<br>
-Every driver, link, information goes here.
+This repository contains a Chipone touch screen module, specifically for Chuwi vi10 and hi10 models.
 
-# Building
-* [chipone_ts](https://github.com/Dax89/chuwi-dev/wiki/Building)
-
-# Documentation
-* [Chuwi Vi10 Ultimate](https://github.com/Dax89/chuwi-dev/wiki/Chuwi-Vi10-Ultimate)
+Support has been added specifically for the CW1515 model.
 
 # License
 Source code in this repository is released under GNU GPL License.<br>
