@@ -60,7 +60,7 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
     struct device* dev = &data->client->dev;
     struct chipone_ts_coordinate_area_regs coordinatearea;
     bool gesturechanged, needsync = false;
-    int i, cX, cW;
+    int i, cX, cY;
 
     if(chipone_ts_regs_get_header_area(data->client, &data->last_header_area) < 0){
 		dev_err(dev, "Cannot read header\n");
