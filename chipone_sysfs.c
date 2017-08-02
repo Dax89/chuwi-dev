@@ -6,8 +6,7 @@
 #include "chipone_regs.h"
 #include "chipone.h"
 
-static ssize_t chipone_ts_sysfs_headerarea_show(struct device *dev, struct device_attribute* attribute, char* buf)
-{
+static ssize_t chipone_ts_sysfs_headerarea_show(struct device* dev, struct device_attribute* attribute, char* buf){
     struct i2c_client* client = to_i2c_client(dev);
     struct chipone_ts_data* data = (struct chipone_ts_data*)i2c_get_clientdata(client);
     struct chipone_ts_header_area_regs* h = &data->last_header_area;
@@ -39,8 +38,7 @@ static ssize_t chipone_ts_sysfs_headerarea_show(struct device *dev, struct devic
                                             h->fw_sub_version, h->customer_id, h->product_id);
 }
 
-static ssize_t chipone_ts_sysfs_coordinatearea_show(struct device *dev, struct device_attribute* attribute, char* buf)
-{
+static ssize_t chipone_ts_sysfs_coordinatearea_show(struct device *dev, struct device_attribute* attribute, char* buf){
     struct i2c_client* client = to_i2c_client(dev);
     struct chipone_ts_data* data = (struct chipone_ts_data*)i2c_get_clientdata(client);
     struct chipone_ts_coordinate_area_regs* c = &data->last_coordinate_area;
@@ -74,8 +72,7 @@ static ssize_t chipone_ts_sysfs_coordinatearea_show(struct device *dev, struct d
                         c->pointer[9].id, X_POSITION(data->last_coordinate_area, 9), Y_POSITION(data->last_coordinate_area, 9), c->pointer[9].pressure, c->pointer[9].event_id);
 }
 
-static ssize_t chipone_ts_sysfs_configurationarea_show(struct device *dev, struct device_attribute* attribute, char* buf)
-{
+static ssize_t chipone_ts_sysfs_configurationarea_show(struct device* dev, struct device_attribute* attribute, char* buf){
     struct i2c_client* client = to_i2c_client(dev);
     struct chipone_ts_configuration_area_regs c;
 
@@ -109,8 +106,7 @@ static ssize_t chipone_ts_sysfs_configurationarea_show(struct device *dev, struc
 
 }
 
-static ssize_t chipone_ts_sysfs_irq_show(struct device *dev, struct device_attribute* attribute, char* buf)
-{
+static ssize_t chipone_ts_sysfs_irq_show(struct device* dev, struct device_attribute* attribute, char* buf){
     struct i2c_client* client = to_i2c_client(dev);
     return sprintf(buf, "0x%x\n", client->irq);
 }
@@ -132,13 +128,11 @@ static struct attribute_group chipone_ts_sysfs_attrgroup = {
     .attrs = chipone_ts_sysfs_attrs,
 };
 
-int chipone_ts_sysfs_create(struct chipone_ts_data* data)
-{
+int chipone_ts_sysfs_create(struct chipone_ts_data* data){
     struct device* dev = &data->client->dev;
     int ret = sysfs_create_group(&dev->kobj, &chipone_ts_sysfs_attrgroup);
 
-    if(ret)
-    {
+    if(ret){
         dev_err(dev, "Cannot create sysfs files: %d\n", ret);
         return ret;
     }
@@ -146,8 +140,7 @@ int chipone_ts_sysfs_create(struct chipone_ts_data* data)
     return 0;
 }
 
-int chipone_ts_sysfs_remove(struct chipone_ts_data* data)
-{
+int chipone_ts_sysfs_remove(struct chipone_ts_data* data){
     struct device* dev = &data->client->dev;
     sysfs_remove_group(&dev->kobj, &chipone_ts_sysfs_attrgroup);
     return 0;

@@ -8,8 +8,7 @@
 #include <linux/time.h>
 #include "chipone_regs.h"
  
-struct chipone_ts_data
-{
+struct chipone_ts_data{
 	unsigned int irq;
 	struct i2c_client* client;
 	struct input_dev *input;
