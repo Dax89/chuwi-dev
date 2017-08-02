@@ -85,12 +85,12 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 			cX = X_POSITION(coordinatearea, i);
 			cY = Y_POSITION(coordinatearea, i);
 
-			dev_info(dev, "Orig Location: %d,%d\n", cX, cY);
+			//dev_info(dev, "Orig Location: %d,%d\n", cX, cY);
 			
 			cX = (-cX) + screen_max_x;
-			cY = (-cY) + screen_max_y + ();
+			cY = (-cY) + screen_max_y;
 
-			dev_info(dev, "Report Location: %d,%d\n", cX, cY);
+			//dev_info(dev, "Report Location: %d,%d\n", cX, cY);
 			
 			input_report_abs(data->input, ABS_MT_POSITION_X, cX);
 			input_report_abs(data->input, ABS_MT_POSITION_Y, cY);
