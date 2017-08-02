@@ -60,7 +60,7 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
     struct device* dev = &data->client->dev;
     struct chipone_ts_coordinate_area_regs coordinatearea;
     bool gesturechanged, needsync = false;
-    int i;
+    int i, cX, cW;
 
     if(chipone_ts_regs_get_header_area(data->client, &data->last_header_area) < 0){
 		dev_err(dev, "Cannot read header\n");
@@ -82,11 +82,8 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 			input_report_abs(data->input, ABS_MT_TOUCH_MAJOR, coordinatearea.pointer[i].pressure);
 			input_report_abs(data->input, ABS_MT_WIDTH_MAJOR, coordinatearea.pointer[i].pressure);
 
-			int cX = X_POSITION(coordinatearea, i);
-			int cY = Y_POSITION(coordinatearea, i);
-
-			cX = cX - screen_max_x;
-			cY = cY - screen_max_y;
+			cX = X_POSITION(coordinatearea, i);
+			cY = Y_POSITION(coordinatearea, i);
 
 			dev_info(dev, "Touch Location: %d,%d\n", cX, cY);
 			
