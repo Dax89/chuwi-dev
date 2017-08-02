@@ -85,6 +85,9 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 			cX = X_POSITION(coordinatearea, i);
 			cY = Y_POSITION(coordinatearea, i);
 
+			cX = (-cX) + screen_max_x;
+			cY = (-cY) + screen_max_y;
+
 			dev_info(dev, "Touch Location: %d,%d\n", cX, cY);
 			
 			input_report_abs(data->input, ABS_MT_POSITION_X, cX);
