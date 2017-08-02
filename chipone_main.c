@@ -112,7 +112,7 @@ static int chipone_ts_probe(struct i2c_client* client, const struct i2c_device_i
     data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
 
     if(!data){
-		dev_err(#define ev, "Cannot allocate device data\n");
+		dev_err(dev, "Cannot allocate device data\n");
 		return -ENOMEM;
     }
 
