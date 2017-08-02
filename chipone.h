@@ -5,7 +5,7 @@
 #define CHIPONE_DRIVER_NAME    "chipone_ts"
 #define CHIPONE_NAME           "CHPN0001"
 
-#ifdef defined(CONFIG_VI8PLUS)
+#if defined(CONFIG_VI8PLUS)
     #define SCREEN_MAX_X 1920
     #define SCREEN_MAX_Y 1200
     #define CHIPONE_IRQ  0x5C // HACK: Hardcode IRQ, kernel doesn't get it at boot time
