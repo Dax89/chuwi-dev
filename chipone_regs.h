@@ -32,8 +32,8 @@
 
 #define MAX_POINTS 10
 
-#define Y_POSITION(ca, idx) (((u16)ca.pointer[idx].xh << 8) | ca.pointer[idx].xl)
-#define X_POSITION(ca, idx) (((u16)ca.pointer[idx].yh << 8) | ca.pointer[idx].yl)
+#define X_POSITION(ca, idx) (((u16)ca.pointer[idx].xh << 8) | ca.pointer[idx].xl)
+#define Y_POSITION(ca, idx) (((u16)ca.pointer[idx].yh << 8) | ca.pointer[idx].yl)
 
 struct chipone_ts_header_area_regs{
 	u8 work_mode;             // 0x0000
