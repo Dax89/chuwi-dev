@@ -88,7 +88,7 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 			dev_info(dev, "Orig Location: %d,%d\n", cX, cY);
 			
 			cX = (-cX) + screen_max_x;
-			cY = (-cY) + screen_max_y;
+			cY = (-cY) + screen_max_y + ();
 
 			dev_info(dev, "Report Location: %d,%d\n", cX, cY);
 			
@@ -106,6 +106,8 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 		input_report_key(data->input, KEY_LEFTMETA, 0);
 		needsync = true;
     }
+
+	dev_info(dev, "Gesture ID: %d\n", coordinatearea.gesture_id);
 
     if(needsync)
 		input_sync(data->input);
