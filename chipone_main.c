@@ -85,10 +85,12 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 			cX = X_POSITION(coordinatearea, i);
 			cY = Y_POSITION(coordinatearea, i);
 
+			dev_info(dev, "Orig Location: %d,%d\n", cX, cY);
+			
 			cX = (-cX) + screen_max_x;
 			cY = (-cY) + screen_max_y;
 
-			dev_info(dev, "Touch Location: %d,%d\n", cX, cY);
+			dev_info(dev, "Report Location: %d,%d\n", cX, cY);
 			
 			input_report_abs(data->input, ABS_MT_POSITION_X, cX);
 			input_report_abs(data->input, ABS_MT_POSITION_Y, cY);
@@ -99,6 +101,7 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
     }
 
     if(gesturechanged && (coordinatearea.gesture_id & GESTURE_ID_KEY0)){
+		dev_info(dev, "Windows Key Detected\n");
 		input_report_key(data->input, KEY_LEFTMETA, 1);
 		input_report_key(data->input, KEY_LEFTMETA, 0);
 		needsync = true;
