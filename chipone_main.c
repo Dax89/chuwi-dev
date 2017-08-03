@@ -18,7 +18,7 @@ static int screen_max_y = SCREEN_MAX_Y;
 static int offset_x = 30;
 static int offset_y = 0;
 
-static int touch_enabled = 1;
+static bool touch_enabled = 1;
 
 module_param(screen_max_x, int, S_IRUGO | S_IWUSR);
 module_param(screen_max_y, int, S_IRUGO | S_IWUSR);
