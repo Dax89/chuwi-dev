@@ -10,9 +10,10 @@
     #define SCREEN_MAX_Y 1200
     #define CHIPONE_IRQ  0x5C // HACK: Hardcode IRQ, kernel doesn't get it at boot time
 #elif defined(CONFIG_CW1515)
-	#define SCREEN_MAX_X 1920
-	#define SCREEN_MAX_Y 1200
+	#define SCREEN_MAX_X 1200
+	#define SCREEN_MAX_Y 1920
 	#define CHIPONE_IRQ 0xB8
+	#define CHIPONE_XORG_HACK 1
 #elif defined(CONFIG_HI10)
     #define SCREEN_MAX_X 1200
     #define SCREEN_MAX_Y 1900
