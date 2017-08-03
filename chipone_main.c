@@ -96,6 +96,12 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 			#if defined(CONFIG_CW1515)
 			if(cX == 0 && (cY > 568 || cY < 570)){ // On CW1515 the software super key doesn't register as a key
 				dev_info(dev, "Super Key Detected\n");
+				if(coordinatearea->pointer[i].event_id == POINTER_EVENT_DOWN){
+					dev_info(dev, "Down\n");
+				}
+				if(coordinatearea->pointer[i].event_id == POINTER_EVENT_UP){
+					dev_info(dev, "Up\n");
+				}
 				input_report_key(data->input, KEY_LEFTMETA, 1);
 				input_report_key(data->input, KEY_LEFTMETA, 0);
 			}else{
