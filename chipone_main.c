@@ -216,7 +216,7 @@ static int chipone_ts_remove(struct i2c_client* client){
     return 0;
 }
 
-static int chipone_ts_resume(struct i2c_client* client){
+static int chipone_ts_resume(struct device* dev){
 	return 0;
 }
 
