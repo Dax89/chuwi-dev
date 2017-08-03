@@ -227,7 +227,36 @@ static int chipone_ts_remove(struct i2c_client* client){
     return 0;
 }
 
+static int chipone_ts_suspend(struct device* dev){
+	struct i2c_client* client = i2c_verify_client(dev);
+	if(client){
+		struct chipone_ts_data* data = (struct chipone_ts_data*)i2c_get_clientdata(client);
+
+		devm_free_irq(dev, data->irq, data);
+		
+		dev_info(dev, "Suspending");
+	}
+	return 0;
+}
+
 static int chipone_ts_resume(struct device* dev){
+	struct i2c_client* client = i2c_verify_client(dev);
+	int err;
+	
+	if(client){
+		struct chipone_ts_data* data = (struct chipone_ts_data*)i2c_get_clientdata(client);
+
+		err = devm_request_threaded_irq(dev, data->irq, NULL, chipone_ts_irq_handler, IRQF_ONESHOT, client->name, data);
+
+		if(err != 0){
+			dev_err(dev, "IRQ Handler initialization failed for IRQ %x, error: %d\n", data->irq, err);
+			return -EINVAL;
+		}
+		
+		dev_info(dev, "Got client, returning from suspend.");
+	}else{
+		dev_warn(dev, "No client on resume!");
+	}
 	return 0;
 }
 
@@ -246,6 +275,7 @@ static const struct acpi_device_id chipone_ts_acpi_id[] = {
 MODULE_DEVICE_TABLE(acpi, chipone_ts_acpi_id);
 
 static struct dev_pm_ops chipone_ts_pm_ops = {
+	.suspend  = chipone_ts_suspend,
 	.resume   = chipone_ts_resume
 };
 
