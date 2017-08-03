@@ -133,9 +133,11 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 			#endif
 
 			//dev_info(dev, "Orig Location: %d,%d\n", cX, cY);
-			
+
+			#ifdef CHIPONE_XORG_HACK
 			cX = (-cX) + screen_max_x + offset_x;
 			cY = (-cY) + screen_max_y + offset_y;
+			#endif
 
 			//dev_info(dev, "Report Location: %d,%d\n", cX, cY);
 
