@@ -157,6 +157,8 @@ static int chipone_ts_probe(struct i2c_client* client, const struct i2c_device_i
 		return -ENOMEM;
     }
 
+	data->lastSuperPress = 0;
+
     if(client->irq != 0){
 		dev_info(dev, "Detected IRQ: 0x%x\n", client->irq);
 		data->irq = client->irq;
