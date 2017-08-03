@@ -95,13 +95,10 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 
 			#if defined(CONFIG_CW1515)
 			if(cX == 0 && (cY > 568 || cY < 570)){ // On CW1515 the software super key doesn't register as a key
-				dev_info(dev, "Super Key Detected\n");
 				if(coordinatearea.pointer[i].event_id == POINTER_EVENT_DOWN){
-					dev_info(dev, "Down\n");
 					input_report_key(data->input, KEY_LEFTMETA, 1);
 				}
 				if(coordinatearea.pointer[i].event_id == POINTER_EVENT_UP){
-					dev_info(dev, "Up\n");
 					input_report_key(data->input, KEY_LEFTMETA, 0);
 				}
 			}else{
@@ -183,21 +180,14 @@ static int chipone_ts_probe(struct i2c_client* client, const struct i2c_device_i
     if(chipone_ts_fw_update(client) != 0)
 		return -EINVAL;
 
-	err = chipone_ts_regs_set_resolution(client, screen_max_x, screen_max_y);
-    if(err < 0){
-		dev_warn(dev, "Failed to set screen resolution, trying again.\n");
-
-		for(tries = 1; tries < 3; tries++){
-			err = chipone_ts_regs_set_resolution(client, screen_max_x, screen_max_y);
-			if(err < 0){
-				dev_warn(dev, "Failed to set screen resolution, trying again.\n");
-			}else{
-				break;
-			}
-		}
+	for(tries = 0; tries < 3; tries++){
+		err = chipone_ts_regs_set_resolution(client, screen_max_x, screen_max_y);
 		if(err < 0){
-			dev_warn(dev, "Cannot set screen resolution\n");
+			dev_warn(dev, "Failed to set screen resolution, trying again.\n");
 		}
+	}
+	if(err < 0){
+		dev_warn(dev, "Cannot set screen resolution\n");
 	}
 
     err = devm_request_threaded_irq(dev, data->irq, NULL, chipone_ts_irq_handler, IRQF_ONESHOT, client->name, data);
