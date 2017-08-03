@@ -107,7 +107,9 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 		needsync = true;
     }
 
-	dev_info(dev, "Gesture ID: %d\n", coordinatearea.gesture_id);
+	if(coordinatearea.gesture_id != 0){
+		dev_info(dev, "Gesture ID: %d\n", coordinatearea.gesture_id);
+	}
 
     if(needsync)
 		input_sync(data->input);
