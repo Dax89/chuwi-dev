@@ -72,6 +72,7 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
     struct chipone_ts_coordinate_area_regs coordinatearea;
     bool gesturechanged, needsync = false;
     int i, cX, cY;
+	unsigned int msec_since;
 
     if(chipone_ts_regs_get_header_area(data->client, &data->last_header_area) < 0){
 		dev_err(dev, "Cannot read header\n");
@@ -102,11 +103,18 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 				}
 				if(coordinatearea.pointer[i].event_id == POINTER_EVENT_UP){
 					input_report_key(data->input, KEY_LEFTMETA, 0);
-					unsigned int msec_since = jiffies_to_msecs(jiffies) - data->lastSuperPress;
-					if(msec_since > 0){
-						dev_info(dev, "msecs: %d\n", msec_since);
+					if(data->lastSuperPress > 0){
+					    msec_since = jiffies_to_msecs(jiffies) - data->lastSuperPress;
+						if(msec_since > 10000){
+							dev_info(dev, "Held software super for %d msec.\n", msec_since);
+							dev_info(dev, "Resetting screen resolution.\n");
+							err = chipone_ts_regs_set_resolution(client, screen_max_x, screen_max_y);
+							if(err < 0){
+								dev_warn(dev, "Failed to set screen resolution.\n");
+							}
+						}
+						data->lastSuperPress = 0;
 					}
-					data->lastSuperPress = 0;
 				}
 			}else{
 			#endif
