@@ -98,11 +98,11 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 			if(cX == 0 && (cY > 568 || cY < 570)){ // On CW1515 the software super key doesn't register as a key
 				if(coordinatearea.pointer[i].event_id == POINTER_EVENT_DOWN){
 					input_report_key(data->input, KEY_LEFTMETA, 1);
-					data->lastSuperPress = 3;//jiffies_to_msecs(jiffies);
+					data->lastSuperPress = jiffies_to_msecs(jiffies);
 				}
 				if(coordinatearea.pointer[i].event_id == POINTER_EVENT_UP){
 					input_report_key(data->input, KEY_LEFTMETA, 0);
-					unsigned int msec_since = 3;//jiffies_to_msecs(jiffies) - data->lastSuperPress;
+					unsigned int msec_since = jiffies_to_msecs(jiffies) - data->lastSuperPress;
 					if(msec_since > 0){
 						dev_info(dev, "msecs: %d\n", msec_since);
 					}
