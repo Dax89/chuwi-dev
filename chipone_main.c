@@ -163,11 +163,15 @@ static int chipone_ts_probe(struct i2c_client* client, const struct i2c_device_i
 
 	err = chipone_ts_regs_set_resolution(client, screen_max_x, screen_max_y);
     if(err < 0){
+		dev_warn(dev, "Failed to set screen resolution, trying again.\n");
+		
 		int tries;
 		for(tries = 1; tries > 3; tries++){
 			err = chipone_ts_regs_set_resolution(client, screen_max_x, screen_max_y);
 			if(err < 0){
 				dev_warn(dev, "Failed to set screen resolution, trying again.\n");
+			}else{
+				break;
 			}
 		}
 		if(err < 0){
