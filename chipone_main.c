@@ -15,14 +15,18 @@
 static int screen_max_x = SCREEN_MAX_X;
 static int screen_max_y = SCREEN_MAX_Y;
 
-static int offset_x = 0;
+static int offset_x = 30;
 static int offset_y = 0;
+
+static int touch_enabled = 1;
 
 module_param(screen_max_x, int, S_IRUGO | S_IWUSR);
 module_param(screen_max_y, int, S_IRUGO | S_IWUSR);
 
 module_param(offset_x, int, S_IRUGO | S_IWUSR);
 module_param(offset_y, int, S_IRUGO | S_IWUSR);
+
+module_param(touch_enabled, bool, S_IRUGO | S_IWUSR);
 
 static int chipone_ts_create_input_device(struct i2c_client *client, struct chipone_ts_data *data){
     struct device* dev = &client->dev;
@@ -91,23 +95,35 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 			cX = X_POSITION(coordinatearea, i);
 			cY = Y_POSITION(coordinatearea, i);
 
-			//dev_info(dev, "Orig Location: %d,%d\n", cX, cY);
+			#if defined(CONFIG_CW1515)
+			if(cX == 0 && (cY > 568 || cY < 570)){ // On CW1515 the software super key doesn't register as a key
+				dev_info(dev, "Super Key Detected\n");
+				input_report_key(data->input, KEY_LEFTMETA, 1);
+				input_report_key(data->input, KEY_LEFTMETA, 0);
+			}else{
+			#endif
+
+			dev_info(dev, "Orig Location: %d,%d\n", cX, cY);
 			
 			cX = (-cX) + screen_max_x + offset_x;
 			cY = (-cY) + screen_max_y + offset_y;
 
-			//dev_info(dev, "Report Location: %d,%d\n", cX, cY);
+			dev_info(dev, "Report Location: %d,%d\n", cX, cY);
 			
 			input_report_abs(data->input, ABS_MT_POSITION_X, cX);
 			input_report_abs(data->input, ABS_MT_POSITION_Y, cY);
+			
+			#if defined(CONFIG_CW1515)
+			}
+			#endif
 		}
 
 		input_mt_sync_frame(data->input);
 		needsync = true;
     }
-
+	
     if(gesturechanged && (coordinatearea.gesture_id & GESTURE_ID_KEY0)){
-		dev_info(dev, "Windows Key Detected\n");
+		dev_info(dev, "Super Key Detected\n");
 		input_report_key(data->input, KEY_LEFTMETA, 1);
 		input_report_key(data->input, KEY_LEFTMETA, 0);
 		needsync = true;
@@ -201,6 +217,10 @@ static int chipone_ts_remove(struct i2c_client* client){
     return 0;
 }
 
+static int chipone_ts_resume(struct i2c_client* client){
+	return 0;
+}
+
 static const struct i2c_device_id chipone_ts_id[] = {
     {"CHPN0001:00", 0},
     {}
@@ -218,6 +238,7 @@ MODULE_DEVICE_TABLE(acpi, chipone_ts_acpi_id);
 static struct i2c_driver chipone_ts_driver = {
     .probe    = chipone_ts_probe,
     .remove   = chipone_ts_remove,
+	.resume   = chipone_ts_resume,
     .id_table = chipone_ts_id,
 
     .driver = {
