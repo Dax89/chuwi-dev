@@ -192,8 +192,9 @@ static int chipone_ts_probe(struct i2c_client* client, const struct i2c_device_i
 			}
 			dev_warn(dev, "Failed to set screen resolution, trying again.\n");
 		}else{
+			got121++;
 			dev_info(dev, "Set resolution");
-			if(got121){
+			if(got121 > 2){
 				break;
 			}
 		}
