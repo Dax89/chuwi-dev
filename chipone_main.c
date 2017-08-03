@@ -142,7 +142,7 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 
 static int chipone_ts_probe(struct i2c_client* client, const struct i2c_device_id* id){
     struct device* dev = &client->dev;
-    struct chipone_ts_data *data;
+    struct chipone_ts_data* data;
     int err, tries;
 
     dev_info(dev, "Screen resolution: %dx%d\n", screen_max_x, screen_max_y);
