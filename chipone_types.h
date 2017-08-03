@@ -15,7 +15,7 @@ struct chipone_ts_data{
 	struct timeval last_irq_event;
 	struct chipone_ts_header_area_regs last_header_area;
 	struct chipone_ts_coordinate_area_regs last_coordinate_area;
-	unsigned long lastSuperPress;
+	unsigned int lastSuperPress;
 };
 
 #endif // CHIPONE_TYPES_H
