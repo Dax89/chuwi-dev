@@ -104,12 +104,12 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 			}else{
 			#endif
 
-			dev_info(dev, "Orig Location: %d,%d\n", cX, cY);
+			//dev_info(dev, "Orig Location: %d,%d\n", cX, cY);
 			
 			cX = (-cX) + screen_max_x + offset_x;
 			cY = (-cY) + screen_max_y + offset_y;
 
-			dev_info(dev, "Report Location: %d,%d\n", cX, cY);
+			//dev_info(dev, "Report Location: %d,%d\n", cX, cY);
 
 			input_report_abs(data->input, ABS_MT_TOUCH_MAJOR, coordinatearea.pointer[i].pressure);
 			input_report_abs(data->input, ABS_MT_WIDTH_MAJOR, coordinatearea.pointer[i].pressure);
@@ -145,32 +145,15 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 
 static int chipone_ts_init_device(struct i2c_client* client){
 	struct device* dev = &client->dev;
-	int err, tries, got121;
+	int err;
 	
-	if(chipone_ts_fw_update(client) != 0)
+	if(chipone_ts_fw_update(client) != 0){
 		return -EINVAL;
-
-	// We're looking for a return of -121, then we're fine with the next set call
-	// We'll do this up to 10 times. Past that, I don't think it'll happen.
-	// It happens every ~3 times on CW1515. Maybe this code should be specific to that.
-	got121 = 0;
-	for(tries = 0; tries < 10; tries++){
-		err = chipone_ts_regs_set_resolution(client, screen_max_x, screen_max_y);
-		if(err < 0){
-			if(err == -121){
-				got121 = 1;
-			}
-			dev_warn(dev, "Failed to set screen resolution, trying again.\n");
-		}else{
-			got121++;
-			dev_info(dev, "Set resolution");
-			if(got121 > 2){
-				break;
-			}
-		}
 	}
+
+	err = chipone_ts_regs_set_resolution(client, screen_max_x, screen_max_y);
 	if(err < 0){
-		dev_warn(dev, "Cannot set screen resolution\n");
+		dev_warn(dev, "Failed to set screen resolution.\n");
 	}
 	
 	return err;
@@ -225,7 +208,7 @@ static int chipone_ts_probe(struct i2c_client* client, const struct i2c_device_i
     }
 
     return chipone_ts_sysfs_create(data);
-}
+
 
 static int chipone_ts_remove(struct i2c_client* client){
     struct chipone_ts_data* data = (struct chipone_ts_data*)i2c_get_clientdata(client);
