@@ -235,16 +235,20 @@ static const struct acpi_device_id chipone_ts_acpi_id[] = {
 
 MODULE_DEVICE_TABLE(acpi, chipone_ts_acpi_id);
 
+static struct dev_pm_ops chipone_ts_pm_ops = {
+	.resume   = chipone_ts_resume
+};
+
 static struct i2c_driver chipone_ts_driver = {
     .probe    = chipone_ts_probe,
     .remove   = chipone_ts_remove,
-	.resume   = chipone_ts_resume,
     .id_table = chipone_ts_id,
 
     .driver = {
 		.name             = CHIPONE_DRIVER_NAME,
 		.owner            = THIS_MODULE,
 		.acpi_match_table = ACPI_PTR(chipone_ts_acpi_id),
+		.pm = &chipone_ts_pm_ops
     },
 };
 
