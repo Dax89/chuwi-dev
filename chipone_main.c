@@ -146,7 +146,7 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 static int chipone_ts_probe(struct i2c_client* client, const struct i2c_device_id* id){
     struct device* dev = &client->dev;
     struct chipone_ts_data* data;
-    int err, tries;
+    int err, tries, got121;
 
     dev_info(dev, "Screen resolution: %dx%d\n", screen_max_x, screen_max_y);
     dev_info(dev, "Kernel reports IRQ: 0x%x\n", client->irq);
@@ -180,12 +180,22 @@ static int chipone_ts_probe(struct i2c_client* client, const struct i2c_device_i
     if(chipone_ts_fw_update(client) != 0)
 		return -EINVAL;
 
-	for(tries = 0; tries < 3; tries++){
+	// We're looking for a return of -121, then we're fine with the next set call
+	// We'll do this up to 10 times. Past that, I don't think it'll happen.
+	// It happens every ~3 times on CW1515. Maybe this code should be specific to that.
+	got121 = 0;
+	for(tries = 0; tries < 10; tries++){
 		err = chipone_ts_regs_set_resolution(client, screen_max_x, screen_max_y);
 		if(err < 0){
+			if(err == -121){
+				got121 = 1;
+			}
 			dev_warn(dev, "Failed to set screen resolution, trying again.\n");
 		}else{
 			dev_info(dev, "Set resolution");
+			if(got121){
+				break;
+			}
 		}
 	}
 	if(err < 0){
