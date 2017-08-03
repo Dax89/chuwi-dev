@@ -143,10 +143,43 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
     return IRQ_HANDLED;
 }
 
+static int chipone_ts_init_device(struct i2c_client* client){
+	struct device* dev = &client->dev;
+	int err, tries, got121;
+	
+	if(chipone_ts_fw_update(client) != 0)
+		return -EINVAL;
+
+	// We're looking for a return of -121, then we're fine with the next set call
+	// We'll do this up to 10 times. Past that, I don't think it'll happen.
+	// It happens every ~3 times on CW1515. Maybe this code should be specific to that.
+	got121 = 0;
+	for(tries = 0; tries < 10; tries++){
+		err = chipone_ts_regs_set_resolution(client, screen_max_x, screen_max_y);
+		if(err < 0){
+			if(err == -121){
+				got121 = 1;
+			}
+			dev_warn(dev, "Failed to set screen resolution, trying again.\n");
+		}else{
+			got121++;
+			dev_info(dev, "Set resolution");
+			if(got121 > 2){
+				break;
+			}
+		}
+	}
+	if(err < 0){
+		dev_warn(dev, "Cannot set screen resolution\n");
+	}
+	
+	return err;
+}
+
 static int chipone_ts_probe(struct i2c_client* client, const struct i2c_device_id* id){
     struct device* dev = &client->dev;
     struct chipone_ts_data* data;
-    int err, tries, got121;
+    int err;
 
     dev_info(dev, "Screen resolution: %dx%d\n", screen_max_x, screen_max_y);
     dev_info(dev, "Kernel reports IRQ: 0x%x\n", client->irq);
@@ -179,30 +212,9 @@ static int chipone_ts_probe(struct i2c_client* client, const struct i2c_device_i
 		return err;
     }
 
-    if(chipone_ts_fw_update(client) != 0)
+    err = chipone_ts_init_device(client);
+	if(err == -EINVAL){
 		return -EINVAL;
-
-	// We're looking for a return of -121, then we're fine with the next set call
-	// We'll do this up to 10 times. Past that, I don't think it'll happen.
-	// It happens every ~3 times on CW1515. Maybe this code should be specific to that.
-	got121 = 0;
-	for(tries = 0; tries < 10; tries++){
-		err = chipone_ts_regs_set_resolution(client, screen_max_x, screen_max_y);
-		if(err < 0){
-			if(err == -121){
-				got121 = 1;
-			}
-			dev_warn(dev, "Failed to set screen resolution, trying again.\n");
-		}else{
-			got121++;
-			dev_info(dev, "Set resolution");
-			if(got121 > 2){
-				break;
-			}
-		}
-	}
-	if(err < 0){
-		dev_warn(dev, "Cannot set screen resolution\n");
 	}
 
     err = devm_request_threaded_irq(dev, data->irq, NULL, chipone_ts_irq_handler, IRQF_ONESHOT, client->name, data);
@@ -245,6 +257,11 @@ static int chipone_ts_resume(struct device* dev){
 	
 	if(client){
 		struct chipone_ts_data* data = (struct chipone_ts_data*)i2c_get_clientdata(client);
+
+		err = chipone_ts_init_device(client);
+		if(err == -EINVAL){
+			return -EINVAL;
+		}
 
 		err = devm_request_threaded_irq(dev, data->irq, NULL, chipone_ts_irq_handler, IRQF_ONESHOT, client->name, data);
 
