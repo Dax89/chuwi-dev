@@ -15,8 +15,14 @@
 static int screen_max_x = SCREEN_MAX_X;
 static int screen_max_y = SCREEN_MAX_Y;
 
-module_param(screen_max_x, int, S_IRUGO);
-module_param(screen_max_y, int, S_IRUGO);
+static int offset_x = 0;
+static int offset_y = 0;
+
+module_param(screen_max_x, int, S_IRUGO | S_IWUSR);
+module_param(screen_max_y, int, S_IRUGO | S_IWUSR);
+
+module_param(offset_x, int, S_IRUGO | S_IWUSR);
+module_param(offset_y, int, S_IRUGO | S_IWUSR);
 
 static int chipone_ts_create_input_device(struct i2c_client *client, struct chipone_ts_data *data){
     struct device* dev = &client->dev;
@@ -87,8 +93,8 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 
 			//dev_info(dev, "Orig Location: %d,%d\n", cX, cY);
 			
-			cX = (-cX) + screen_max_x;
-			cY = (-cY) + screen_max_y;
+			cX = (-cX) + screen_max_x + offset_x;
+			cY = (-cY) + screen_max_y + offset_y;
 
 			//dev_info(dev, "Report Location: %d,%d\n", cX, cY);
 			
@@ -155,8 +161,19 @@ static int chipone_ts_probe(struct i2c_client* client, const struct i2c_device_i
     if(chipone_ts_fw_update(client) != 0)
 		return -EINVAL;
 
-    if(chipone_ts_regs_set_resolution(client, screen_max_x, screen_max_y) < 0)
-		dev_warn(dev, "Cannot set screen resolution\n");
+	err = chipone_ts_regs_set_resolution(client, screen_max_x, screen_max_y);
+    if(err < 0){
+		int tries;
+		for(tries = 1; tries > 3; tries++){
+			err = chipone_ts_regs_set_resolution(client, screen_max_x, screen_max_y);
+			if(err < 0){
+				dev_warn(dev, "Failed to set screen resolution, trying again.\n");
+			}
+		}
+		if(err < 0){
+			dev_warn(dev, "Cannot set screen resolution\n");
+		}
+	}
 
     err = devm_request_threaded_irq(dev, data->irq, NULL, chipone_ts_irq_handler, IRQF_ONESHOT, client->name, data);
 
