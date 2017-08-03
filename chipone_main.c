@@ -66,12 +66,28 @@ static int chipone_ts_create_input_device(struct i2c_client *client, struct chip
     return 0;
 }
 
+static int chipone_ts_init_device(struct i2c_client* client){
+	struct device* dev = &client->dev;
+	int err;
+	
+	if(chipone_ts_fw_update(client) != 0){
+		return -EINVAL;
+	}
+
+	err = chipone_ts_regs_set_resolution(client, screen_max_x, screen_max_y);
+	if(err < 0){
+		dev_warn(dev, "Failed to set screen resolution.\n");
+	}
+	
+	return err;
+}
+
 static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
     struct chipone_ts_data* data = (struct chipone_ts_data*)dev_id;
     struct device* dev = &data->client->dev;
     struct chipone_ts_coordinate_area_regs coordinatearea;
     bool gesturechanged, needsync = false;
-    int i, err, cX, cY;
+    int i, cX, cY;
 	unsigned int msec_since;
 
     if(chipone_ts_regs_get_header_area(data->client, &data->last_header_area) < 0){
@@ -108,10 +124,7 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 						if(msec_since > 10000){
 							dev_info(dev, "Held software super for %d msec.\n", msec_since);
 							dev_info(dev, "Resetting screen resolution.\n");
-							err = chipone_ts_regs_set_resolution(data->client, screen_max_x, screen_max_y);
-							if(err < 0){
-								dev_warn(dev, "Failed to set screen resolution.\n");
-							}
+						    chipone_ts_init_device(data->client);
 						}
 						data->lastSuperPress = 0;
 					}
@@ -156,22 +169,6 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 
     data->last_coordinate_area = coordinatearea; // Save last touch information
     return IRQ_HANDLED;
-}
-
-static int chipone_ts_init_device(struct i2c_client* client){
-	struct device* dev = &client->dev;
-	int err;
-	
-	if(chipone_ts_fw_update(client) != 0){
-		return -EINVAL;
-	}
-
-	err = chipone_ts_regs_set_resolution(client, screen_max_x, screen_max_y);
-	if(err < 0){
-		dev_warn(dev, "Failed to set screen resolution.\n");
-	}
-	
-	return err;
 }
 
 static int chipone_ts_probe(struct i2c_client* client, const struct i2c_device_id* id){
