@@ -89,9 +89,7 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 		for(i = 0; i < coordinatearea.num_pointer; i++){
 			input_mt_slot(data->input, i);
 			input_mt_report_slot_state(data->input, MT_TOOL_FINGER, chipone_ts_regs_is_finger_down(&coordinatearea, i));
-			input_report_abs(data->input, ABS_MT_TOUCH_MAJOR, coordinatearea.pointer[i].pressure);
-			input_report_abs(data->input, ABS_MT_WIDTH_MAJOR, coordinatearea.pointer[i].pressure);
-
+			
 			cX = X_POSITION(coordinatearea, i);
 			cY = Y_POSITION(coordinatearea, i);
 
@@ -109,7 +107,9 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 			cY = (-cY) + screen_max_y + offset_y;
 
 			dev_info(dev, "Report Location: %d,%d\n", cX, cY);
-			
+
+			input_report_abs(data->input, ABS_MT_TOUCH_MAJOR, coordinatearea.pointer[i].pressure);
+			input_report_abs(data->input, ABS_MT_WIDTH_MAJOR, coordinatearea.pointer[i].pressure);
 			input_report_abs(data->input, ABS_MT_POSITION_X, cX);
 			input_report_abs(data->input, ABS_MT_POSITION_Y, cY);
 			
