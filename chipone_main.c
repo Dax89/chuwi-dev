@@ -108,7 +108,7 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 						if(msec_since > 10000){
 							dev_info(dev, "Held software super for %d msec.\n", msec_since);
 							dev_info(dev, "Resetting screen resolution.\n");
-							err = chipone_ts_regs_set_resolution(client, screen_max_x, screen_max_y);
+							err = chipone_ts_regs_set_resolution(data->client, screen_max_x, screen_max_y);
 							if(err < 0){
 								dev_warn(dev, "Failed to set screen resolution.\n");
 							}
