@@ -98,12 +98,12 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 				dev_info(dev, "Super Key Detected\n");
 				if(coordinatearea.pointer[i].event_id == POINTER_EVENT_DOWN){
 					dev_info(dev, "Down\n");
+					input_report_key(data->input, KEY_LEFTMETA, 1);
 				}
 				if(coordinatearea.pointer[i].event_id == POINTER_EVENT_UP){
 					dev_info(dev, "Up\n");
+					input_report_key(data->input, KEY_LEFTMETA, 0);
 				}
-				input_report_key(data->input, KEY_LEFTMETA, 1);
-				input_report_key(data->input, KEY_LEFTMETA, 0);
 			}else{
 			#endif
 
