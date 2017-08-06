@@ -16,18 +16,8 @@
 static int screen_max_x = SCREEN_MAX_X;
 static int screen_max_y = SCREEN_MAX_Y;
 
-static int offset_x = 30;
-static int offset_y = 0;
-
-static bool touch_enabled = 1;
-
 module_param(screen_max_x, int, S_IRUGO | S_IWUSR);
 module_param(screen_max_y, int, S_IRUGO | S_IWUSR);
-
-module_param(offset_x, int, S_IRUGO | S_IWUSR);
-module_param(offset_y, int, S_IRUGO | S_IWUSR);
-
-module_param(touch_enabled, bool, S_IRUGO | S_IWUSR);
 
 static int chipone_ts_create_input_device(struct i2c_client *client, struct chipone_ts_data *data){
     struct device* dev = &client->dev;
@@ -36,14 +26,15 @@ static int chipone_ts_create_input_device(struct i2c_client *client, struct chip
 
     input = devm_input_allocate_device(dev);
 
-    if(!input)
+    if(!input){
 		return -ENOMEM;
+	}
 
     input->name = client->name;
 
     set_bit(INPUT_PROP_DIRECT, input->propbit);
     set_bit(EV_KEY, input->evbit);    // This device supports keys
-    set_bit(KEY_LEFTMETA, input->keybit); 
+    set_bit(KEY_LEFTMETA, input->keybit);
 
     input_mt_init_slots(input, MAX_POINTS, 0);
     input_set_abs_params(input, ABS_MT_POSITION_X, 0, screen_max_x, 0, 0);
@@ -69,7 +60,7 @@ static int chipone_ts_create_input_device(struct i2c_client *client, struct chip
 static int chipone_ts_init_device(struct i2c_client* client){
 	struct device* dev = &client->dev;
 	int err;
-	
+
 	if(chipone_ts_fw_update(client) != 0){
 		return -EINVAL;
 	}
@@ -78,7 +69,7 @@ static int chipone_ts_init_device(struct i2c_client* client){
 	if(err < 0){
 		dev_warn(dev, "Failed to set screen resolution.\n");
 	}
-	
+
 	return err;
 }
 
@@ -107,7 +98,7 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 		for(i = 0; i < coordinatearea.num_pointer; i++){
 			input_mt_slot(data->input, i);
 			input_mt_report_slot_state(data->input, MT_TOOL_FINGER, chipone_ts_regs_is_finger_down(&coordinatearea, i));
-			
+
 			cX = X_POSITION(coordinatearea, i);
 			cY = Y_POSITION(coordinatearea, i);
 
@@ -145,7 +136,7 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 			input_report_abs(data->input, ABS_MT_WIDTH_MAJOR, coordinatearea.pointer[i].pressure);
 			input_report_abs(data->input, ABS_MT_POSITION_X, cX);
 			input_report_abs(data->input, ABS_MT_POSITION_Y, cY);
-			
+
 			#if defined(CONFIG_CW1515)
 			}
 			#endif
@@ -154,7 +145,7 @@ static irqreturn_t chipone_ts_irq_handler(int irq, void* dev_id){
 		input_mt_sync_frame(data->input);
 		needsync = true;
     }
-	
+
     if(gesturechanged && (coordinatearea.gesture_id & GESTURE_ID_KEY0)){
 		dev_info(dev, "Super Key Detected\n");
 		input_report_key(data->input, KEY_LEFTMETA, 1);
@@ -242,8 +233,6 @@ static int chipone_ts_suspend(struct device* dev){
 		struct chipone_ts_data* data = (struct chipone_ts_data*)i2c_get_clientdata(client);
 
 		devm_free_irq(dev, data->irq, data);
-		
-		dev_info(dev, "Suspending");
 	}
 	return 0;
 }
@@ -251,7 +240,7 @@ static int chipone_ts_suspend(struct device* dev){
 static int chipone_ts_resume(struct device* dev){
 	struct i2c_client* client = i2c_verify_client(dev);
 	int err;
-	
+
 	if(client){
 		struct chipone_ts_data* data = (struct chipone_ts_data*)i2c_get_clientdata(client);
 
@@ -266,10 +255,6 @@ static int chipone_ts_resume(struct device* dev){
 			dev_err(dev, "IRQ Handler initialization failed for IRQ %x, error: %d\n", data->irq, err);
 			return -EINVAL;
 		}
-		
-		dev_info(dev, "Got client, returning from suspend.");
-	}else{
-		dev_warn(dev, "No client on resume!");
 	}
 	return 0;
 }
