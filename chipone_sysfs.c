@@ -12,7 +12,7 @@ static ssize_t chipone_ts_sysfs_headerarea_show(struct device* dev, struct devic
     struct chipone_ts_header_area_regs* h = &data->last_header_area;
     struct tm t;
 
-    time_to_tm(data->last_irq_event.tv_sec, 0, &t);
+    time64_to_tm(data->last_irq_event.tv_sec, 0, &t);
 
     return sprintf(buf, "Last event on: %02d:%02d:%02d\n"
                         "work_mode: %x\n"
@@ -44,7 +44,7 @@ static ssize_t chipone_ts_sysfs_coordinatearea_show(struct device *dev, struct d
     struct chipone_ts_coordinate_area_regs* c = &data->last_coordinate_area;
     struct tm t;
 
-    time_to_tm(data->last_irq_event.tv_sec, 0, &t);
+    time64_to_tm(data->last_irq_event.tv_sec, 0, &t);
 
     return sprintf(buf, "Last event on: %02d:%02d:%02d\n"
                         "gesture_id: %x\n"
