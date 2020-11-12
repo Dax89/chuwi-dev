@@ -1,5 +1,4 @@
 #include <asm/segment.h>
-#include <asm/uaccess.h>
 #include <linux/kernel.h>
 #include <linux/fs.h>
 #include <linux/delay.h>
@@ -61,9 +60,8 @@ static unsigned int crc32table[256] = {
  0xbcb4666d, 0xb8757bda, 0xb5365d03, 0xb1f740b4
 };
  
-static int chipone_ts_fw_i2c_txdata(struct i2c_client *client, unsigned int addr, char* txdata, int length)
-{
-    struct device *dev = &client->dev;
+static int chipone_ts_fw_i2c_txdata(struct i2c_client* client, unsigned int addr, char* txdata, int length){
+    struct device* dev = &client->dev;
     unsigned char tmpbuf[128];
     int ret = -1, retries = 0;
 
@@ -76,8 +74,7 @@ static int chipone_ts_fw_i2c_txdata(struct i2c_client *client, unsigned int addr
         },
     };
 
-    if (length > 125)
-    {
+    if (length > 125){
         dev_err(dev, "%s: too big datalen = %d!\n", __func__, length);
         return -1;
     }
@@ -86,28 +83,26 @@ static int chipone_ts_fw_i2c_txdata(struct i2c_client *client, unsigned int addr
     tmpbuf[1] = (unsigned char)(addr >> 8);
     tmpbuf[2] = (unsigned char)(addr);
 
-    if (length != 0 && txdata != NULL)
+    if(length != 0 && txdata != NULL)
         memcpy(&tmpbuf[3], txdata, length);
 
-    while(retries < CHIPONE_IIC_RETRY_NUM)
-    {
+    while(retries < CHIPONE_IIC_RETRY_NUM){
         ret = i2c_transfer(client->adapter, msg, 1);
-
+		
         if(ret == 1)
             break;
 
         retries++;
     }
 
-    if (retries >= CHIPONE_IIC_RETRY_NUM)
+    if(retries >= CHIPONE_IIC_RETRY_NUM)
         dev_err(dev, "%s: i2c write error: %d\n", __func__, ret);
 
     return ret;
 }
 
-static int chipone_ts_fw_i2c_rxdata(struct i2c_client* client, unsigned int addr, char* rxdata, int length)
-{
-    struct device *dev = &client->dev;
+static int chipone_ts_fw_i2c_rxdata(struct i2c_client* client, unsigned int addr, char* rxdata, int length){
+    struct device* dev = &client->dev;
     int ret = -1, retries = 0;
     unsigned char tmpbuf[3];
 
@@ -130,8 +125,7 @@ static int chipone_ts_fw_i2c_rxdata(struct i2c_client* client, unsigned int addr
     tmpbuf[1] = (unsigned char)(addr >> 8);
     tmpbuf[2] = (unsigned char)(addr);
 
-    while(retries < CHIPONE_IIC_RETRY_NUM)
-    {
+    while(retries < CHIPONE_IIC_RETRY_NUM){
         ret = i2c_transfer(client->adapter, msgs, 2);
 
         if(ret == 2)
@@ -140,22 +134,20 @@ static int chipone_ts_fw_i2c_rxdata(struct i2c_client* client, unsigned int addr
         retries++;
     }
 
-    if (retries >= CHIPONE_IIC_RETRY_NUM)
-	dev_err(dev, "%s: i2c read error: %d\n", __func__, ret);
+    if(retries >= CHIPONE_IIC_RETRY_NUM)
+		dev_err(dev, "%s: i2c read error: %d\n", __func__, ret);
 
     return ret;
 }
 
-static int chipone_ts_fw_check_progmode(struct i2c_client *client)
-{
-    struct device *dev = &client->dev;
+static int chipone_ts_fw_check_progmode(struct i2c_client* client){
+    struct device* dev = &client->dev;
     unsigned char temp = 0x0;
     int ret;
 
     ret = chipone_ts_fw_i2c_rxdata(client, 0x040002, &temp, 1);
 
-    if(ret < 0)
-    {
+    if(ret < 0){
         dev_err(dev, "%s error, ret: %d\n", __func__, ret);
         return ret;
     }
@@ -166,13 +158,11 @@ static int chipone_ts_fw_check_progmode(struct i2c_client *client)
     return -1;
 }
 
-static int chipone_ts_fw_goto_progmode(struct i2c_client *client)
-{
+static int chipone_ts_fw_goto_progmode(struct i2c_client* client){
     int ret = -1, retry = 3;
     unsigned char temp;
 
-    while(retry > 0)
-    {
+    while(retry > 0){
         temp = 0x5A;
         ret =  chipone_ts_fw_i2c_txdata(client, 0xCC3355, &temp, 1);
         mdelay(2);
@@ -196,9 +186,8 @@ static int chipone_ts_fw_goto_progmode(struct i2c_client *client)
     return 0;
 }
 
-static int chipone_ts_fw_bootfrom_sram(struct i2c_client* client)
-{
-    struct device *dev = &client->dev;
+static int chipone_ts_fw_bootfrom_sram(struct i2c_client* client){
+    struct device* dev = &client->dev;
     unsigned char temp = 0x03;
     unsigned long addr = 0x40400;
 
@@ -206,18 +195,14 @@ static int chipone_ts_fw_bootfrom_sram(struct i2c_client* client)
     return chipone_ts_fw_i2c_txdata(client, addr, &temp, 1);
 }
 
-static int chipone_ts_fw_crc_enable(struct i2c_client *client, unsigned char enable)
-{
+static int chipone_ts_fw_crc_enable(struct i2c_client* client, unsigned char enable){
     unsigned char temp;
     int ret = 0;
 
-    if(enable==1)
-    {
+    if(enable==1){
         temp = 1;
         ret = chipone_ts_fw_i2c_txdata(client, 0x40028, &temp, 1);
-    }
-    else if(enable==0)
-    {
+    }else if(enable==0){
         temp = 0;
         ret = chipone_ts_fw_i2c_txdata(client, 0x40028, &temp, 1);
     } 
@@ -225,8 +210,7 @@ static int chipone_ts_fw_crc_enable(struct i2c_client *client, unsigned char ena
     return ret;
 }
 
-static unsigned int chipone_ts_fw_crc_calc(unsigned crc_in, char *buf, int len)  
-{
+static unsigned int chipone_ts_fw_crc_calc(unsigned crc_in, char* buf, int len){
     int i;
     unsigned int crc = crc_in;
 
@@ -236,13 +220,12 @@ static unsigned int chipone_ts_fw_crc_calc(unsigned crc_in, char *buf, int len)
     return crc;
 }
 
-static int chipone_ts_fw_crc_check(struct i2c_client *client, unsigned int crc, unsigned int len)
-{
+static int chipone_ts_fw_crc_check(struct i2c_client* client, unsigned int crc, unsigned int len){
     int ret;
     unsigned int crclen;
     unsigned int crcresult;    
     unsigned char temp[4] = {0,0,0,0};     
-    struct device *dev = &client->dev;
+    struct device* dev = &client->dev;
 
     ret = chipone_ts_fw_i2c_rxdata(client, 0x4002c, temp, 4);
     crcresult = temp[3] << 24 | temp[2] << 16 | temp[1] << 8 | temp[0];
@@ -261,15 +244,13 @@ static int chipone_ts_fw_crc_check(struct i2c_client *client, unsigned int crc, 
     return -1;
 }
 
-int chipone_ts_fw_update(struct i2c_client *client)
-{
-    struct device *dev = &client->dev;
+int chipone_ts_fw_update(struct i2c_client* client){
+    struct device* dev = &client->dev;
     unsigned char* buf;
     unsigned int crcfw;
     int i, num, lastlength, res;
 
-    if(chipone_ts_fw_goto_progmode(client) != 0)
-    {
+    if(chipone_ts_fw_goto_progmode(client) != 0){
         dev_err(dev, "%s error, cannot enable programming mode\n", __func__);
         return -1;
     }
@@ -281,8 +262,7 @@ int chipone_ts_fw_update(struct i2c_client *client)
     num = FIRMWARE_BIN_LEN/ B_SIZE;
     crcfw = 0;
 
-    for(i = 0; i < num; i++)
-    {
+    for(i = 0; i < num; i++){
         buf = FIRMWARE_BIN + (i * B_SIZE);
         crcfw = chipone_ts_fw_crc_calc(crcfw, buf, B_SIZE);
         chipone_ts_fw_i2c_txdata(client, i * B_SIZE, buf, B_SIZE); // Download firmware
@@ -290,8 +270,7 @@ int chipone_ts_fw_update(struct i2c_client *client)
 
     lastlength = FIRMWARE_BIN_LEN - B_SIZE * i;
 
-    if(lastlength > 0) // Download last chunk, if any
-    {
+    if(lastlength > 0){ // Download last chunk, if any
         buf = FIRMWARE_BIN + (i * B_SIZE);
         crcfw = chipone_ts_fw_crc_calc(crcfw, buf, lastlength);
         chipone_ts_fw_i2c_txdata(client, i * B_SIZE, buf, lastlength); // Download firmware
@@ -300,8 +279,7 @@ int chipone_ts_fw_update(struct i2c_client *client)
     chipone_ts_fw_crc_enable(client, 0);
     res = chipone_ts_fw_crc_check(client, crcfw, FIRMWARE_BIN_LEN);
 
-    if(res != 0)
-    {
+    if(res != 0){
         if(res == -1)
             dev_err(dev, "Firmware download failed: CRC Error\n");
         else if(res == -2)
@@ -314,8 +292,7 @@ int chipone_ts_fw_update(struct i2c_client *client)
 
     dev_info(dev, "Firmware download completed, CRC OK\n");
 
-    if(chipone_ts_fw_bootfrom_sram(client) == 0)
-    {
+    if(chipone_ts_fw_bootfrom_sram(client) == 0){
         dev_err(dev, "Boot ERROR\n");
         return -1;
     }

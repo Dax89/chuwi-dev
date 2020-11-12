@@ -35,8 +35,7 @@
 #define X_POSITION(ca, idx) (((u16)ca.pointer[idx].xh << 8) | ca.pointer[idx].xl)
 #define Y_POSITION(ca, idx) (((u16)ca.pointer[idx].yh << 8) | ca.pointer[idx].yl)
 
-struct chipone_ts_header_area_regs
-{
+struct chipone_ts_header_area_regs{
 	u8 work_mode;             // 0x0000
 	u8 system_busy_flag;      // 0x0001
 	u8 reserved1[2];          // 0x0002
@@ -54,8 +53,7 @@ struct chipone_ts_header_area_regs
 	u8 product_id;            // 0x000F
 };
 
-struct chipone_ts_pointer
-{
+struct chipone_ts_pointer{
 	u8 id;
 	u8 xl;
 	u8 xh;
@@ -65,15 +63,13 @@ struct chipone_ts_pointer
 	u8 event_id;
 };
 
-struct chipone_ts_coordinate_area_regs
-{
+struct chipone_ts_coordinate_area_regs{
 	u8 gesture_id;
 	u8 num_pointer;
 	struct chipone_ts_pointer pointer[MAX_POINTS];
 };
 
-struct chipone_ts_configuration_area_regs // NOTE: Needs investigation
-{
+struct chipone_ts_configuration_area_regs{ // NOTE: Needs investigation
 	u16 res_x;
 	u16 res_y;
 	u8 row_num;
@@ -103,7 +99,7 @@ struct chipone_ts_configuration_area_regs // NOTE: Needs investigation
 	u8 enter_monitor_cnt;
 };
 
-bool chipone_ts_regs_is_finger_down(struct chipone_ts_coordinate_area_regs *coordinatearearegs, int idx);
+bool chipone_ts_regs_is_finger_down(struct chipone_ts_coordinate_area_regs* coordinatearearegs, int idx);
 int chipone_ts_regs_get_header_area(struct i2c_client* client, struct chipone_ts_header_area_regs* headerarearegs);
 int chipone_ts_regs_get_coordinate_area(struct i2c_client* client, struct chipone_ts_coordinate_area_regs* coordinatearearegs);
 int chipone_ts_regs_get_configuration_area(struct i2c_client* client, struct chipone_ts_configuration_area_regs* configurationarea);
