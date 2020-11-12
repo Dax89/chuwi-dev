@@ -1,5 +1,4 @@
 #include <asm/segment.h>
-#include <asm/uaccess.h>
 #include <linux/kernel.h>
 #include <linux/fs.h>
 #include <linux/delay.h>

@@ -19,6 +19,14 @@ static int screen_max_y = SCREEN_MAX_Y;
 module_param(screen_max_x, int, S_IRUGO | S_IWUSR);
 module_param(screen_max_y, int, S_IRUGO | S_IWUSR);
 
+void do_gettimeofday(struct timeval *tv)
+{
+        struct timespec64 ts;
+        ktime_get_real_ts64(&ts);
+        tv->tv_sec = ts.tv_sec;
+        tv->tv_usec = ts.tv_nsec/1000;
+}
+
 static int chipone_ts_create_input_device(struct i2c_client *client, struct chipone_ts_data *data){
     struct device* dev = &client->dev;
     struct input_dev* input;
